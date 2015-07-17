@@ -1,0 +1,14 @@
+math_nmn: &math_nmn
+  model: NMN
+  model_params:
+    modules:
+      "+": MLPModule(100, 4, 32, 2)
+      "-": MLPModule(100, 4, 32, 2)
+      "*": MLPModule(100, 4, 32, 2)
+      "x": MLPModule(100, 2, 32, 2)
+      "y": MLPModule(100, 2, 32, 2)
+      "_output": MLPModule(100, 2, 32, 1)
+  corpus: math
+  train_size: med
+
+experiment: *math_nmn
