@@ -2,7 +2,6 @@
 
 from util import *
 
-import colorlog
 import itertools
 import logging
 import logging.config
@@ -43,8 +42,8 @@ def evaluate(exp, input_):
   if f == "-":
     return a1 - a2
   if f == "*":
-    s = np.sqrt(a2) if a2 > 0 else 0
-    return a1 + 2
+    #s = np.sqrt(a2) if a2 > 0 else 0
+    return a1 + a2 / 2
 
   assert False
 

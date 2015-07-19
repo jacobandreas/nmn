@@ -11,4 +11,15 @@ math_nmn: &math_nmn
   corpus: math
   train_size: med
 
-experiment: *math_nmn
+math_lstm: &math_lstm
+  model: LSTM
+  model_params:
+    batch_size: 100
+    world_size: 2
+    vocab_size: 7 # + - * x y ( )
+    hidden_size: 32
+    output_size: 1
+  corpus: math
+  train_size: med
+
+experiment: *math_lstm

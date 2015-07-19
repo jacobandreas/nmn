@@ -1,6 +1,5 @@
 *.pyc
 *.log
-*.large.input
-*.large.output
-*.large.query
+data/*
 old
+*.swp

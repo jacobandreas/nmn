@@ -13,11 +13,15 @@ def sample(symbol, grammar):
   rules = grammar[symbol]
   exps = [rule.rhs for rule in rules]
   weights = [rule.weight for rule in rules]
+  weights = [float(w) / sum(weights) for w in weights]
   index = np.random.choice(len(exps), p=weights)
   exp = exps[index]
 
   # generate recursively
-  exp = list(exp)
+  if isinstance(exp, tuple):
+    exp = list(exp)
+  else:
+    exp = [exp]
   for i in range(len(exp)):
     sym = exp[i]
     if isinstance(sym, str) and sym[0] == '$':

@@ -2,6 +2,7 @@
 
 import corpus
 from nmn import NMN
+from lstm import LSTM
 
 from collections import defaultdict
 import logging, logging.config
