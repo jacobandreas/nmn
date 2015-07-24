@@ -13,7 +13,8 @@ N_QUERY_INSTS = 20
 N_TRAIN_TINY  = 10
 N_TRAIN_SMALL = 100
 N_TRAIN_MED   = 1000
-N_TRAIN_LARGE = 10000
+#N_TRAIN_LARGE = 10000
+N_TRAIN_ALL   = N_TRAIN_MED
 
 N_TEST        = 1000
 N_VAL         = 1000
@@ -231,7 +232,7 @@ if __name__ == "__main__":
   val_data = []
   test_data = []
 
-  while len(train_data) < N_TRAIN_LARGE * N_QUERY_INSTS:
+  while len(train_data) < N_TRAIN_ALL * N_QUERY_INSTS:
     query = sample("$Q", GRAMMAR)
     if query not in seen:
       images = gen_images(query)
@@ -239,7 +240,7 @@ if __name__ == "__main__":
         train_data += images
         seen.add(query)
         if len(train_data) % (1000 * N_QUERY_INSTS) == 0:
-          logging.debug("%d / %d", len(train_data) / N_QUERY_INSTS, N_TRAIN_LARGE)
+          logging.debug("%d / %d", len(train_data) / N_QUERY_INSTS, N_TRAIN_ALL)
   logging.debug("generated train")
   train_data_tiny = train_data[:N_TRAIN_TINY * N_QUERY_INSTS]
   train_data_small = train_data[:N_TRAIN_SMALL * N_QUERY_INSTS]

@@ -36,7 +36,7 @@ class LSTM:
     self.l_forward_2 = layers.LSTMLayer(self.l_forward_1, hidden_size)
     self.l_slice = layers.SliceLayer(self.l_forward_2, indices=-1, axis=1)
 
-    self.l_predict = layers.DenseLayer(self.l_slice, output_size)
+    self.l_predict = layers.DenseLayer(self.l_slice, output_size, nonlinearity=None)
 
     self.t_input_text = T.imatrix("input_text")
     self.t_input_world = T.matrix("input_world")

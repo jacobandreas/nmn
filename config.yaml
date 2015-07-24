@@ -1,5 +1,7 @@
 math_nmn: &math_nmn
   model: NMN
+  input_type: VectorInput()
+  output_type: SquaredError()
   model_params:
     modules:
       "+": MLPModule(100, 4, 32, 2)
@@ -20,6 +22,42 @@ math_lstm: &math_lstm
     hidden_size: 32
     output_size: 1
   corpus: math
+  train_size: large
+
+shapes_nmn: &shapes_nmn
+  model: NMN
+  input_type: ImageInput()
+  output_type: Classification()
+  model_params:
+    modules:
+      count: MLPModule(20, 4 * 9, 8, 17, output_nonlinearity=nonlinearities.softmax)
+      shape: MLPModule(20, 4 * 9, 8, 17, output_nonlinearity=nonlinearities.softmax)
+      color: MLPModule(20, 4 * 9, 8, 17, output_nonlinearity=nonlinearities.softmax)
+      size: MLPModule(20, 4 * 9, 8, 17, output_nonlinearity=nonlinearities.softmax)
+
+      next_to: ConvModule(20, 4, 3, 4, 3, 1, 1)
+      left_of: ConvModule(20, 4, 3, 4, 3, 1, 1)
+      right_of: ConvModule(20, 4, 3, 4, 3, 1, 1)
+      above: ConvModule(20, 4, 3, 4, 3, 1, 1)
+      below: ConvModule(20, 4, 3, 4, 3, 1, 1)
+
+      or: ConvModule(20, 8, 3, 4, 3, 1, 1)
+      and: ConvModule(20, 8, 3, 4, 3, 1, 1)
+      xor: ConvModule(20, 8, 3, 4, 3, 1, 1)
+      
+      small: ConvModule(20, 3, 60, 4, 3, 5, 4)
+      big: ConvModule(20, 3, 60, 4, 3, 5, 4)
+      red: ConvModule(20, 3, 60, 4, 3, 5, 4)
+      green: ConvModule(20, 3, 60, 4, 3, 5, 4)
+      blue: ConvModule(20, 3, 60, 4, 3, 5, 4)
+      circle: ConvModule(20, 3, 60, 4, 3, 5, 4)
+      square: ConvModule(20, 3, 60, 4, 3, 5, 4)
+      triangle: ConvModule(20, 3, 60, 4, 3, 5, 4)
+      nothing: ConvModule(20, 3, 60, 4, 3, 5, 4)
+
+      _output: IdentityModule()
+
+  corpus: shapes
   train_size: med
 
-experiment: *math_lstm
+experiment: *shapes_nmn
