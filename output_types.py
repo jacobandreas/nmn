@@ -5,7 +5,7 @@ import numpy as np
 import theano
 import theano.tensor as T
 
-class SquaredError:
+class Regression:
   def __init__(self):
     self.dtype = theano.config.floatX
     self.loss = lasagne.objectives.squared_error
@@ -21,3 +21,10 @@ class Classification:
   def make_target(self):
     return T.ivector("target")
 
+class ImageOutput:
+  def __init__(self):
+    self.dtype = theano.config.floatX
+    self.loss = lasagne.objectives.squared_error
+
+  def make_target(self):
+    return T.tensor4("target")
