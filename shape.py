@@ -1,8 +1,7 @@
 #!/usr/bin/env python2
 
 import nmn
-from lasagne import nonlinearities
-from debug import HackL1ConvModule, HackL2ConvModule, HackL3Module, HackColorModule
+from lasagne import nonlinearities, layers
 
 class ShapeModuleBuilder:
   def __init__(self, params):
@@ -20,8 +19,13 @@ class ShapeModuleBuilder:
     self.hidden_size = params["hidden_size"]
     self.vocab_size = params["vocab_size"]
 
+    self.pre_message_size = self.image_size / self.input_mid_pool
     self.message_size = self.image_size / (self.input_mid_pool *
         self.input_out_pool)
+
+  def build_input(self):
+    return layers.InputLayer((self.batch_size, self.channels, self.image_size,
+        self.image_size))
 
   def build(self, name, arity):
     if name == "_output":
@@ -30,44 +34,28 @@ class ShapeModuleBuilder:
           self.message_size, self.hidden_size, self.vocab_size,
           output_nonlinearity=nonlinearities.softmax)
 
-    elif arity == 0:
-      #return nmn.Conv1Module(self.batch_size, self.channels, self.image_size,
-      #    self.out_filters, self.input_mid_filter_size,
-      #    self.image_size / self.message_size)
+    elif name == "_pre":
+        return nmn.Conv1Module(self.batch_size, self.channels, self.image_size,
+                self.mid_filters, self.input_mid_filter_size,
+                self.input_mid_pool)
 
-      return nmn.ConvModule(self.batch_size, self.channels, self.image_size,
-          self.mid_filters, self.out_filters, self.input_mid_filter_size,
-          self.input_out_filter_size, self.input_mid_pool, self.input_out_pool)
+    #elif arity == 0:
+    #  return nmn.ConvModule(self.batch_size, self.channels, self.image_size,
+    #      self.mid_filters, self.out_filters, self.input_mid_filter_size,
+    #      self.input_out_filter_size, self.input_mid_pool, self.input_out_pool)
 
-      #return nmn.MLPModule(self.batch_size, self.channels * self.image_size *
-      #    self.image_size, self.hidden_size, self.out_filters *
-      #    self.message_size * self.message_size)
+    elif name in ("red", "green", "blue", "circle", "square", "triangle"):
+      return nmn.Conv1Module(self.batch_size, self.mid_filters,
+              self.pre_message_size, self.out_filters,
+              self.input_out_filter_size, self.input_out_pool)
 
-      #channel = {"red": 0, "green": 1, "blue": 2}[name]
-      #return HackColorModule(channel)
-
-    elif arity == 1:
-      #r, c = {
-      #    "left_of": (1, 0),
-      #    "above": (0, 1)
-      #}[name]
-      #return HackL2ConvModule(r, c)
-
-      #return nmn.ConvModule(self.batch_size, self.out_filters, self.message_size,
-      #    self.mid_filters, self.out_filters, self.filter_size,
-      #    self.filter_size, 1, 1, tie=True)
-
-      return nmn.MLPModule(self.batch_size, self.out_filters * self.message_size
-          * self.message_size, self.hidden_size, self.out_filters * self.message_size
-          * self.message_size)
-
-    elif arity == 2:
-      return HackL3Module()
-
-      #return nmn.MLPModule(self.batch_size, 2 * self.out_filters * self.message_size
+    elif name in ("left_of", "right_of", "above", "below"):
+      #return nmn.MLPModule(self.batch_size, self.out_filters * self.message_size
       #    * self.message_size, self.hidden_size, self.out_filters * self.message_size
       #    * self.message_size)
+      return nmn.Conv1Module(self.batch_size, self.out_filters,
+              self.message_size, self.out_filters,
+              self.filter_size, 1)
 
-      #return nmn.ConvModule(self.batch_size, self.out_filters * 2,
-      #    self.message_size, self.mid_filters, self.out_filters,
-      #    self.filter_size, 1, 1)
+    elif arity == 2:
+      return nmn.MinModule()

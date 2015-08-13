@@ -9,8 +9,8 @@ import logging.config
 import numpy as np
 import yaml
 
-N_QUERY_INSTS = 2048
-#N_QUERY_INSTS = 256
+#N_QUERY_INSTS = 2048
+N_QUERY_INSTS = 64
 
 N_TRAIN_TINY  = 10
 N_TRAIN_SMALL = 100

@@ -27,7 +27,7 @@ if __name__ == "__main__":
     config = yaml.load(experiment_config_f)["experiment"]
 
   train_data = corpus.load(config["corpus"], "train.%s" % config["train_size"])
-  #train_data = train_data[2*2048:3*2048]
+  #train_data = train_data[:2048]
   logging.info("loaded train.%s", config["train_size"])
   val_data = corpus.load(config["corpus"], "val")
   logging.info("loaded val")

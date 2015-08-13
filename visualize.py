@@ -33,14 +33,13 @@ for filter_fname in os.listdir("weights"):
     surf = cairo.ImageSurface.create_for_data(data, cairo.FORMAT_ARGB32, out_width, out_height)
     data[:,:,3] = 255
 
-
     for i_channel in range(3):
       i_filter_channel = i_channel % filter.shape[1]
       #for c in range(3):
       #  sc = 2. if c == i_channel else 1.
       #  data[:,:,c] = 128 + sc * 60 * scaled_filter[i_filter,i_filter_channel,:,:]
       #print filter[i_filter,i_filter_channel,:,:]
-      scaled_filter = np.kron(filter[i_filter, i_channel,:,:], np.ones((scale, scale)))
+      scaled_filter = np.kron(filter[i_filter, i_filter_channel,:,:], np.ones((scale, scale)))
       scaled_filter = 128 * scaled_filter / fmax
       data[:,:,2-i_channel] = 128 + scaled_filter
 

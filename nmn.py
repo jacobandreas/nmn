@@ -13,8 +13,8 @@ import warnings
 
 
 class Network:
-  def __init__(self, l_inputs, l_output):
-    self.l_inputs = l_inputs
+  def __init__(self, l_input, l_output):
+    self.l_input = l_input
     self.l_output = l_output
 
   def add_objective(self, input_type, output_type):
@@ -22,8 +22,7 @@ class Network:
     self.params = params
 
     t_input = input_type.make_input()
-    input_mapping = {l_input: t_input for l_input in self.l_inputs}
-    t_output = layers.get_output(self.l_output, input_mapping)
+    t_output = layers.get_output(self.l_output, t_input)
     t_pred = T.argmax(t_output, axis=1)
     t_target = output_type.make_target()
 
@@ -33,28 +32,8 @@ class Network:
     t_loss = objectives.aggregate(output_type.loss(t_output, t_target))
     grads = T.grad(t_loss, params)
     scaled_grads, t_norm = updates.total_norm_constraint(grads, 1, return_norm=True)
-    #scaled_grads, t_norm = grads, None
-    #upd = updates.nesterov_momentum(scaled_grads, params, lr, momentum)
-    #upd = updates.adam(grads, params)
     upd = updates.adadelta(scaled_grads, params, learning_rate = lr)
 
-    #upd = updates.momentum(t_loss, params, lr, momentum)
-    #keys = [k for k, v in upd.items()]
-    #upd = updates.total_norm_constraint(upd, 1, return_norm=True)
-    #upd = zip(keys, upd)
-
-    #clipped_upd = []
-    #for v, u in upd.items():
-    #  try:
-    #    clipped_u = updates.norm_constraint(u, 1e-8)
-    #    clipped_upd.append((v, clipped_u))
-    #  except:
-    #    clipped_upd.append((v, u))
-    ##upd = [(v, updates.norm_constraint(u, 0.01)) for v, u in upd.items()]
-    #upd = clipped_upd
-
-    #upd = updates.adam(t_loss, params)
-    #upd = updates.nesterov_momentum(t_loss, params, lr)
     loss_inputs = [t_input, t_target]
     self.loss = theano.function(loss_inputs, t_loss)
     self.train = theano.function(loss_inputs, t_loss, updates=upd)
@@ -66,9 +45,22 @@ class IdentityModule:
   def __init__(self):
     pass
 
-  def instantiate(self, *inputs):
-    assert len(inputs) == 1
-    return inputs[0]
+  def instantiate(self, input, *below):
+    assert len(below) == 1
+    return below[0]
+
+  def write_weights(self, dest, name):
+    pass
+
+class MinModule:
+  def __init__(self):
+    pass
+
+  def instantiate(self, l_input, *below):
+    l_min = layers.ElemwiseMergeLayer([b.l_output for b in below], T.minimum)
+    l_threshold = layers.NonlinearityLayer(l_min)
+    l_output = l_threshold
+    return Network(l_input, l_output)
 
   def write_weights(self, dest, name):
     pass
@@ -89,23 +81,16 @@ class Conv1Module:
       filter_size_1, filter_size_1)))
     self.b_conv1 = theano.shared(zero.sample((filter_count_1,)))
 
-  def instantiate(self, *inputs):
-    #print
-    #print "inputs are", [i.l_output.output_shape for i in inputs]
-    #print "my sizes are", (self.batch_size, self.channels, self.image_size)
+  def instantiate(self, l_input, *below):
 
-    if len(inputs) == 0:
+    if len(below) == 0:
       l_first = layers.InputLayer((self.batch_size, self.channels, self.image_size, self.image_size))
-      l_inputs = [l_first]
     else:
-      l_first = layers.ConcatLayer([input.l_output for input in inputs], axis=1)
-      l_inputs = [l_input for input in inputs for l_input in input.l_inputs]
+      l_first = layers.ConcatLayer([b.l_output for b in below], axis=1)
 
     l_conv1 = layers.Conv2DLayer(l_first, self.filter_count_1,
         self.filter_size_1,
         W=self.w_conv1, b=self.b_conv1, border_mode="same")
-    #l_conv1 = lasagne.layers.cuda_convnet.Conv2DCCLayer(l_first, self.filter_count_1,
-    #    self.filter_size, border_mode="same")
     if self.pool_size_1 > 1:
       l_pool1 = layers.MaxPool2DLayer(l_conv1, self.pool_size_1)
       l_1 = l_pool1
@@ -114,7 +99,7 @@ class Conv1Module:
 
     l_output = l_1
 
-    return Network(l_inputs, l_output)
+    return Network(l_input, l_output)
 
   def write_weights(self, dest, name):
     np.save(dest + "/" + name, self.w_conv1.get_value())
@@ -149,23 +134,17 @@ class ConvModule:
       self.b_conv1 = zero
       self.b_conv2 = zero
 
-  def instantiate(self, *inputs):
-    #print
-    #print "inputs are", [i.l_output.output_shape for i in inputs]
-    #print "my sizes are", (self.batch_size, self.channels, self.image_size)
+  def instantiate(self, l_input, *below):
 
-    if len(inputs) == 0:
-      l_first = layers.InputLayer((self.batch_size, self.channels, self.image_size, self.image_size))
-      l_inputs = [l_first]
+    if len(below) == 0:
+      #l_first = layers.InputLayer((self.batch_size, self.channels, self.image_size, self.image_size))
+      assert False
     else:
-      l_first = layers.ConcatLayer([input.l_output for input in inputs], axis=1)
-      l_inputs = [l_input for input in inputs for l_input in input.l_inputs]
+      l_first = layers.ConcatLayer([b.l_output for b in below], axis=1)
 
     l_conv1 = layers.Conv2DLayer(l_first, self.filter_count_1,
         self.filter_size_1,
         W=self.w_conv1, b=self.b_conv1, border_mode="same")
-    #l_conv1 = lasagne.layers.cuda_convnet.Conv2DCCLayer(l_first, self.filter_count_1,
-    #    self.filter_size, border_mode="same")
     if self.pool_size_1 > 1:
       l_pool1 = layers.MaxPool2DLayer(l_conv1, self.pool_size_1)
       l_1 = l_pool1
@@ -182,10 +161,7 @@ class ConvModule:
 
     l_output = l_2
 
-    #l_shape = layers.ReshapeLayer(l_2, (self.batch_size, 9))
-    #l_output = l_shape
-
-    return Network(l_inputs, l_output)
+    return Network(l_input, l_output)
 
   def write_weights(self, dest, name):
     if self.tie:
@@ -209,18 +185,13 @@ class MLPModule:
     self.w_output = theano.shared(glorot.sample((hidden_size, output_size)))
     self.b_output = theano.shared(zero.sample((output_size,)))
 
-  def instantiate(self, *inputs):
-    #print
-    #print "inputs are", [i.l_output.output_shape for i in inputs]
-    #print "my sizes are", (self.batch_size, self.input_size)
+  def instantiate(self, l_input, *below):
 
-    if len(inputs) == 0:
-      l_first = layers.InputLayer((self.batch_size, self.input_size))
-      l_inputs = [l_first]
+    if len(below) == 0:
+      #l_first = layers.InputLayer((self.batch_size, self.input_size))
+      assert False
     else:
-      #print [i.l_output.output_shape for i in inputs], "*"
-      l_first = layers.ConcatLayer([input.l_output for input in inputs])
-      l_inputs = [l_input for input in inputs for l_input in input.l_inputs]
+      l_first = layers.ConcatLayer([b.l_output for b in below])
 
     l_hidden = layers.DenseLayer(l_first, self.hidden_size, W=self.w_hidden,
             b=self.b_hidden)
@@ -234,7 +205,7 @@ class MLPModule:
     else:
       l_out = l_output
 
-    return Network(l_inputs, l_out)
+    return Network(l_input, l_out)
 
   def write_weights(self, dest, name):
     pass
@@ -246,19 +217,25 @@ class NMN:
     self.output_type = output_type
 
     self.modules = dict()
-    if "modules" in params:
-      for key, mod_config in params["modules"].items():
-        module = eval(mod_config)
-        self.modules[key] = module
+    #if "modules" in params:
+    #  for key, mod_config in params["modules"].items():
+    #    module = eval(mod_config)
+    #    self.modules[key] = module
 
-    if "module_builder" in params:
-      self.module_builder = globals()[params["module_builder"]["class"]](params["module_builder"])
+    self.module_builder = globals()[params["module_builder"]["class"]](params["module_builder"])
 
-  def wire(self, query):
+  def wire(self, query, l_input=None, l_pre=None):
+    if l_input is None:
+      assert l_pre is None
+      l_input = self.get_input()
+      l_pre = self.get_module("_pre", 1).instantiate(l_input)
     if not isinstance(query, tuple):
-      return self.get_module(query, 0).instantiate()
-    args = [self.wire(q) for q in query[1:]]
-    return self.get_module(query[0], len(args)).instantiate(*args)
+      return self.get_module(query, 1).instantiate(l_input, l_pre)
+    args = [self.wire(q, l_input, l_pre) for q in query[1:]]
+    return self.get_module(query[0], len(args)).instantiate(l_input, *args)
+
+  def get_input(self):
+    return self.module_builder.build_input()
 
   def get_module(self, name, arity):
     if name in self.modules:
@@ -273,7 +250,7 @@ class NMN:
 
     logging.debug('new network: %s', pp(query))
     pre_net = self.wire(query)
-    net = self.get_module("_output", 1).instantiate(pre_net)
+    net = self.get_module("_output", 1).instantiate(pre_net.l_input, pre_net)
     net.add_objective(self.input_type, self.output_type)
 
     self.cached_networks[query] = net
