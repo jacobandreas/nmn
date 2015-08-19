@@ -18,7 +18,7 @@ math_lstm: &math_lstm
   model_params:
     batch_size: 100
     world_size: 2
-    vocab_size: 7 # + - * x y ( )
+    vocab_size: 7
     hidden_size: 32
     output_size: 1
   corpus: math
@@ -30,7 +30,7 @@ shapes_nmn: &shapes_nmn
   output_type: Classification()
   model_params:
     module_builder: 
-      class: ShapeModuleBuilder
+      class: ShapesModuleBuilder
       batch_size: 64
       image_size: 30
       channels: 3 
@@ -47,4 +47,36 @@ shapes_nmn: &shapes_nmn
   corpus: shapes
   train_size: large
 
-experiment: *shapes_nmn
+images_nmn: &images_nmn
+  model: NMN
+  input_type: ImageInput()
+  output_type: Classification()
+  model_params:
+    module_builder:
+      class: ImagesModuleBuilder
+      batch_size: 1
+      image_size: 6
+      channels: 256
+      vocab_size: 380
+
+  corpus: images
+  train_size: large
+
+shapes_lstm: &shapes_lstm
+  model: LSTM
+  input_type: ImageInput()
+  output_type: Classification()
+  model_params:
+    batch_size: 64
+    #world_size: 900
+    image_size: 30
+    channels: 3
+    vocab_size: 14
+    hidden_size: 8
+    output_size: 2
+    query_max_length: 10
+
+  corpus: shapes
+  train_size: large
+
+experiment: *images_nmn

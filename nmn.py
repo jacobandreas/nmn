@@ -1,7 +1,8 @@
 #!/usr/bin/env python2
 
 from data.util import pp
-from shape import *
+from shapes import *
+from images import *
 
 import logging
 from lasagne import init, layers, objectives, updates, nonlinearities
@@ -28,11 +29,14 @@ class Network:
 
     momentum = 0.9
     lr = 0.1
+    clip = 1
 
     t_loss = objectives.aggregate(output_type.loss(t_output, t_target))
     grads = T.grad(t_loss, params)
-    scaled_grads, t_norm = updates.total_norm_constraint(grads, 1, return_norm=True)
-    upd = updates.adadelta(scaled_grads, params, learning_rate = lr)
+    scaled_grads, t_norm = updates.total_norm_constraint(grads, clip, return_norm=True)
+    #upd = updates.adadelta(scaled_grads, params, learning_rate = lr)
+    #upd = updates.adam(scaled_grads, params, learning_rate = lr)
+    upd = updates.nesterov_momentum(scaled_grads, params, learning_rate = lr)
 
     loss_inputs = [t_input, t_target]
     self.loss = theano.function(loss_inputs, t_loss)
@@ -42,12 +46,17 @@ class Network:
     self.norm = theano.function(loss_inputs, t_norm)
 
 class IdentityModule:
-  def __init__(self):
-    pass
-
   def instantiate(self, input, *below):
     assert len(below) == 1
     return below[0]
+
+  def write_weights(self, dest, name):
+    pass
+
+class InputIdentityModule:
+  def instantiate(self, input, *below):
+    assert len(below) == 0
+    return Network(input, input)
 
   def write_weights(self, dest, name):
     pass

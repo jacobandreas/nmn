@@ -156,34 +156,34 @@ def match_simple_query(query, edges):
 
 is_prep_query = (
   [ 
-    ("cop", 0, "is-\\d"),
+    ("cop", 0, "be-\\d"),
     ("(amod|nsubj)", 0, 1) ,
     ("advmod", 0, 2)
   ],
-  ("is", (2, 0), 1)
+  ("is", ("and", (2, 0), 1))
 )
 
 is_query = (
   [ 
-    ("cop", 0, "(is|are|'s)-\\d"),
+    ("cop", 0, "be-\\d"),
     ("(amod|nsubj)", 0, 1) 
   ],
-  ("is", 0, 1)
+  ("is", ("and", 0, 1))
 )
 
 is_query_2 = (
   [
-    ("aux", 0, "(is|are|'s)-\\d"),
+    ("aux", 0, "be-\\d"),
     ("nsubj", 0, 1)
   ],
-  ("is", 0, 1)
+  ("is", ("and", 0, 1))
 )
 
 whatx_query = (
   [
     ("det", 0, "what-\\d"),
-    ("dep", "(is|are|'s)-\\d", 0),
-    ("nsubj", "(is|are|'s)-\\d", 1)
+    ("dep", "be-\\d", 0),
+    ("nsubj", "be-\\d", 1)
   ],
   (0, 1)
 )
@@ -191,33 +191,42 @@ whatx_query = (
 whatx_prep_query = (
   [
     ("det", 0, "what-\\d"),
-    ("nsubj", "(is|are|'s)-\\d", 0),
+    ("nsubj", "be-\\d", 0),
     ("case", 1, 2),
-    ("nmod:\\w+", "(is|are|'s)-\\d", 1)
+    ("nmod:\\w+", "be-\\d", 1)
   ],
   (0, (2, 1))
 )
 
+whatx_of_query = (
+  [
+    ("cop", "what-\\d", "be-\\d"),
+    ("nsubj", "what-\\d", 0),
+    ("nmod:\\w+", 0, 1),
+  ],
+  (0, 1)
+)
+
 wh_prep_query = (
   [
-    ("nsubj", "(is|are|'s)-\\d", 0),
+    ("nsubj", "be-\\d", 0),
     ("case", 1, 2),
-    ("nmod:\\w+", "(is|are|'s)-\\d", 1)
+    ("nmod:\\w+", "be-\\d", 1)
   ],
   (0, (2, 1))
 )
 
 wh_query = (
   [
-    ("advmod", "(is|are|'s)-\\d", 0),
-    ("nsubj", "(is|are|'s)-\\d", 1)
+    ("advmod", "be-\\d", 0),
+    ("nsubj", "be-\\d", 1)
   ],
   (0, 1)
 )
 
 wh_query_2 = (
   [
-    ("cop", 0, "(is|are|'s)-\\d"),
+    ("cop", 0, "be-\\d"),
     ("nsubj", 0, 1)
   ],
   (0, 1)
@@ -231,16 +240,26 @@ count_query = (
   ("count", 0)
 )
 
+expl_query = (
+  [
+    ("expl", "be-\\d", "there-\\d"),
+    ("nsubj", "be-\\d", 0)
+  ],
+  ("is", 0)
+)
+
 SIMPLE_QUERIES = [
   count_query,
   whatx_prep_query,
+  whatx_of_query,
   whatx_query,
   wh_prep_query,
   wh_query,
   #wh_query_2,
   is_prep_query,
   is_query,
-  is_query_2
+  is_query_2,
+  expl_query
 ]
 def make_simple_query(edges):
   for query in SIMPLE_QUERIES:
@@ -264,9 +283,6 @@ def convert_to_query(query_lines):
 
   joined_lines = "".join(query_lines)
   q = make_simple_query(joined_lines)
-  #print joined_lines
-  print q
-  #print
   return q
 
   #root_node = [tail for head, tail in edges.keys() if head == ("root", "0")][0]
@@ -278,13 +294,29 @@ def convert_to_query(query_lines):
 if __name__ == "__main__":
   queries = []
   query_lines = []
+  got_question = False
+  question = None
   for line in sys.stdin:
     sline = line.strip()
-    if sline == "":
+    if sline == "" and not got_question:
+      got_question = True
+      question = query_lines[0]
+      query_lines = []
+    elif sline == "":
+      got_question = False
       query = convert_to_query(query_lines)
       queries.append(query)
+
+      #print question
+      #print "\n".join(query_lines)
+      if query is None:
+        print "none"
+      else:
+        print query
+      #print
+
       query_lines = []
     else:
       query_lines.append(sline)
 
-  print len(queries)
+  #print len(queries)

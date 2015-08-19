@@ -10,3 +10,5 @@ cc_parse="/home/jda/3p/candc-1.00/bin/parser --printer prolog --super $cc_models
 #cat $1.tok | $cc_tok > $1.pos
 echo "parsing"
 cat $1.pos | $cc_parse > $1.query
+
+# ls Images/train2014 | g -v scaled | cut -d "_" -f 3 | cut -d . -f 1 | sed "s/^0*//" | awk '{printf "%s,%s\n",$0,NR-1}'

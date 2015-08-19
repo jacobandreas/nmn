@@ -3,7 +3,7 @@
 import nmn
 from lasagne import nonlinearities, layers
 
-class ShapeModuleBuilder:
+class ShapesModuleBuilder:
   def __init__(self, params):
     self.batch_size = params["batch_size"]
     self.image_size = params["image_size"]

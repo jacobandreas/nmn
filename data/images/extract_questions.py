@@ -11,5 +11,5 @@ with open(sys.argv[1]) as data_file, \
   for question in questions:
     image_id = question["image_id"]
     question_id = question["question_id"]
-    print >>id_file, "%s,%s" % (image_id, question_id)
+    print >>id_file, "%s,%s" % (question_id, image_id)
     print >>question_file, question["question"].encode("ascii", "ignore")

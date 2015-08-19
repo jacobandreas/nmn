@@ -5,7 +5,8 @@ from nmn import NMN
 from lstm import LSTM
 from input_types import *
 from output_types import *
-from shape import *
+from shapes import *
+from images import *
 
 from collections import defaultdict
 import logging, logging.config
@@ -13,7 +14,8 @@ import numpy as np
 import theano
 import yaml
 
-#theano.config.optimizer = "None"
+theano.config.optimizer = "None"
+theano.exception_verbosity = "high"
 
 LOG_CONFIG = "log.yaml"
 EXPERIMENT_CONFIG = "config.yaml"
@@ -27,9 +29,10 @@ if __name__ == "__main__":
     config = yaml.load(experiment_config_f)["experiment"]
 
   train_data = corpus.load(config["corpus"], "train.%s" % config["train_size"])
-  #train_data = train_data[:2048]
+  train_data = train_data[1:3]
   logging.info("loaded train.%s", config["train_size"])
   val_data = corpus.load(config["corpus"], "val")
+  val_data = val_data[:0]
   logging.info("loaded val")
 
   input_type = eval(config["input_type"])
@@ -60,7 +63,7 @@ if __name__ == "__main__":
     for query in train_queries:
       data = train_data_by_query[query]
       np.random.shuffle(data)
-      data = data[:256]
+      data = data[:1]
       batch_inputs = np.asarray([datum.input_ for datum in data], dtype=input_type.dtype)
       batch_outputs = np.asarray([datum.output for datum in data], dtype=output_type.dtype)
 
@@ -71,6 +74,8 @@ if __name__ == "__main__":
       #logging.debug("norm %0.4f", norm)
       batch_pred = model.predict(query, batch_inputs)
       epoch_train_ll += train_ll
+      #print hash(str(batch_inputs.nonzero()))
+      #print query, train_ll, batch_pred
       epoch_train_acc += 1. * sum(np.equal(batch_pred, batch_outputs)) / len(data)
     epoch_train_ll /= len(train_queries)
     epoch_train_acc /= len(train_queries)
@@ -78,12 +83,13 @@ if __name__ == "__main__":
     epoch_val_ll = 0.
     epoch_val_acc = 0.
     for query, data in val_data_by_query.items():
-      data = data[:256]
+      data = data[:1]
       batch_inputs = np.asarray([datum.input_ for datum in data], dtype=input_type.dtype)
       batch_outputs = np.asarray([datum.output for datum in data], dtype=output_type.dtype)
       val_ll = model.loss(query, batch_inputs, batch_outputs)
       batch_pred = model.predict(query, batch_inputs)
       epoch_val_ll += val_ll
+      #print query, val_ll, batch_pred
       epoch_val_acc += 1. * sum(np.equal(batch_pred, batch_outputs)) / len(data)
 
     if val_data_by_query:
