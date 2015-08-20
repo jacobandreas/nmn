@@ -1,10 +1,13 @@
 #!/usr/bin/env python2
 
+import caffe.nmn
 from datum import QueryDatum
 from query import parse_query
 from util import Index
 
 import numpy as np
+
+# loading
 
 def load_train(size):
     #return load("train.%s" % size)
@@ -84,3 +87,8 @@ def load(set_name):
       data.append(datum)
 
   return data
+
+# modules
+
+def build_caffe_module(name, arity):
+    return caffe.nmn.Module()

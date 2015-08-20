@@ -6,6 +6,7 @@ corpus:
 
 model:
   name: nmn
+  module_builder: images
   opt:
     batch_size: 64
     learning_rate: 0.1

@@ -27,7 +27,7 @@ def main():
     train_data = corpus.load_train(config.corpus.train_size)
     val_data = corpus.load_val()
 
-    backend = __import__(config.backend)
+    backend = importlib.import_module(config.backend)
     model = backend.build_model(config.model)
     trained_model = model.train(train_data, val_data)
 
