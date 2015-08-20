@@ -1,0 +1,17 @@
+backend: caffe
+
+corpus:
+  name: images
+  train_size: large
+
+model:
+  name: nmn
+  opt:
+    batch_size: 64
+    learning_rate: 0.1
+    momentum: 0.9
+    clip: 1
+  input:
+    image_size: 6
+    channels: 256
+    vocab_size: 380

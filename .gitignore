@@ -1,6 +1,6 @@
 *.pyc
 *.log
 data/*
-old
+_old
 *.swp
 weights*
