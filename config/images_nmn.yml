@@ -6,13 +6,14 @@ corpus:
 
 model:
   name: nmn
-  module_builder: images
-  opt:
-    batch_size: 64
-    learning_rate: 0.1
-    momentum: 0.9
-    clip: 1
-  input:
-    image_size: 6
-    channels: 256
-    vocab_size: 380
+  module_builder:
+    name: images
+    input_size: 256
+    hidden_size: 32
+
+opt:
+  batch_size: 64
+  learning_rate: 0.01
+  momentum: 0.9
+  clip: 1
+  iters: 100

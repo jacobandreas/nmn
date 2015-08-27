@@ -5,6 +5,7 @@ import util
 import argparse
 import importlib
 import logging.config
+import numpy as np
 import yaml
 
 arg_parser = argparse.ArgumentParser()
@@ -28,8 +29,18 @@ def main():
     val_data = corpus.load_val()
 
     backend = importlib.import_module(config.backend)
-    model = backend.build_model(config.model)
-    trained_model = model.train(train_data, val_data)
+    model = backend.build_model(config.model, config.opt)
+
+    for i_iter in range(config.opt.iters):
+        iter_loss = 0
+        for i_datum in range(len(train_data)):
+            query = train_data[i_datum].query
+            batch_data = [train_data[i_datum]]
+            batch_input = np.asarray([d.input for d in batch_data])
+            batch_output = np.asarray([d.output for d in batch_data])
+            iter_loss += model.forward(query, batch_input, batch_output)
+            model.update()
+        print iter_loss / len(train_data)
 
 if __name__ == "__main__":
     main()

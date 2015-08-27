@@ -2,4 +2,4 @@
 
 from collections import namedtuple
 
-QueryDatum = namedtuple("QueryDatum", ["query", "input", "output"])
+QueryDatum = namedtuple("QueryDatum", ["query", "input", "output", "name"])
