@@ -17,11 +17,9 @@ UNKNOWN = "*unknown*"
 
 def load_train(size):
     return load("train.%s" % size)
-    #return load("val")
 
 def load_val():
-    return []
-    #return load("val")
+    return load("val")
 
 def datum_filter(query, answer):
   if not isinstance(query, tuple) or query[0] != "color":
@@ -91,7 +89,7 @@ def load(set_name):
     assert len(image_names) == len(i2i)
 
     images = dict()
-    for image_id, index in i2i.items()[:10000]:
+    for image_id, index in i2i.items()[:100]:
       try:
         images[image_id] = np.load("data/images/Images/%s2014/embedded/%s.npy" %
                 (short_set_name, image_names[index]))
@@ -148,8 +146,8 @@ def build_caffe_module(name, arity, input_name, incoming_names, apollo_net,
         return caffe.module.ConvModule(name, config.hidden_size, input_name,
                                        incoming_names, apollo_net)
 
-def build_caffe_input_module(apollo_net):
-    return caffe.module.InputModule(apollo_net)
+def build_caffe_loss_module(output_name, apollo_net):
+    return caffe.module.ClassificationLogLossModule(output_name, apollo_net)
 
-def build_caffe_output_module(output_name, apollo_net):
-    return caffe.module.ClassificationOutputModule(output_name, apollo_net)
+def build_caffe_eval_module(output_name, apollo_net):
+    return caffe.module.ClassificationAccuracyModule(output_name, apollo_net)

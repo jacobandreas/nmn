@@ -73,15 +73,15 @@ class AnswerModule:
         #        self.prediction_layer_name,
         #        bottoms=[self.ip_layer_name]))
 
-class InputModule:
-    def __init__(self, apollo_net):
+class DataModule:
+    def __init__(self, name, apollo_net):
         self.apollo_net = apollo_net
-        self.last_layer_name = "Input_data"
+        self.last_layer_name = name
 
-    def forward(self, input):
-        self.apollo_net.f(layers.NumpyData(self.last_layer_name, data=input))
+    def forward(self, data):
+        self.apollo_net.f(layers.NumpyData(self.last_layer_name, data=data))
 
-class ClassificationOutputModule:
+class ClassificationLogLossModule:
     def __init__(self, output_name, apollo_net):
         self.apollo_net = apollo_net
         self.output_name = output_name
@@ -89,7 +89,16 @@ class ClassificationOutputModule:
         self.loss_name = "Loss"
 
     def forward(self, target):
-        self.apollo_net.f(layers.NumpyData(
-            self.target_name, data=target))
         return self.apollo_net.f(layers.SoftmaxWithLoss(
             self.loss_name, bottoms=[self.output_name, self.target_name]))
+
+class ClassificationAccuracyModule:
+    def __init__(self, output_name, apollo_net):
+        self.apollo_net = apollo_net
+        self.output_name = output_name
+        self.target_name = "Target"
+        self.acc_name = "Accuracy"
+
+    def forward(self, target):
+        return self.apollo_net.f(my_layers.Accuracy(
+            self.acc_name, bottoms=[self.output_name, self.target_name]))

@@ -18,6 +18,25 @@ class Reshape(Layer):
     def __init__(self, name, **kwargs):
         super(Reshape, self).__init__(self, name, kwargs)
 
+class Accuracy(Layer):
+    def __init__(self, name, **kwargs):
+        super(Accuracy, self).__init__(self, name, kwargs)
+        self.kwargs = kwargs
+        self.p.type = "Py"
+
+    def setup(self, bttom, top):
+        top[0].reshape((1,))
+
+    def forward(self, bottom, top):
+        output, target = bottom
+        prediction = np.argmax(output.data, axis=1)
+        agreements = np.sum(prediction == target.data)
+        top[0].data[...] = np.asarray(agreements)
+        return agreements
+
+    def backward(self, top, bottom):
+        pass
+        #raise NotImplementedError()
 
 class Attention(Layer):
     def __init__(self, name, **kwargs):
