@@ -3,6 +3,7 @@
 import util
 
 import argparse
+from collections import defaultdict
 import importlib
 import itertools
 import logging.config
@@ -27,46 +28,81 @@ def main():
     corpus = importlib.import_module("task.%s" % config.corpus.name)
 
     train_data = corpus.load_train(config.corpus.train_size)
+    #train_data = train_data[2:3]
+    #val_data = train_data 
     val_data = corpus.load_val()
 
-    backend = importlib.import_module(config.backend)
+    backend = importlib.import_module("backend.%s" % config.backend)
     model = backend.build_model(config.model, config.opt)
 
-    train_data_by_query = itertools.
+    train_data_grouped = by_query(train_data)
+    train_queries = train_data_grouped.keys()
+    val_data_grouped = by_query(val_data)
+    val_queries = val_data_grouped.keys()
+
+    input_shapes = [d.input.shape for d in (train_data + val_data)]
+    max_input_size = tuple(np.max(input_shapes, axis=0))
 
     for i_iter in range(config.opt.iters):
-        train_loss = 0.
-        train_acc = 0.
-        for i_datum in range(len(train_data)):
-            query = train_data[i_datum].query
-            batch_data = [train_data[i_datum]]
-            batch_input = np.asarray([d.input for d in batch_data])
-            batch_output = np.asarray([d.output for d in batch_data])
+        #np.random.shuffle(train_queries)
+        #train_loss, train_acc = batched_iter(train_queries, train_data_grouped, max_input_size, model, config, train=True)
+        np.random.shuffle(train_data)
+        train_loss, train_acc = simple_iter(train_data, model, train=True)
+        if i_iter % 1 == 0:
+            #val_loss, val_acc = simple_iter(val_data, model)
+            val_loss, val_acc = batched_iter(val_queries, val_data_grouped, max_input_size, model, config)
+            logging.info("%2.4f  %2.4f  :  %2.4f  %2.4f",
+                    train_loss, train_acc, val_loss, val_acc)
+        else:
+            logging.info("%2.4f  %2.4f", train_loss, train_acc)
+
+
+def batched_iter(queries, data_grouped, max_input_size, model, config, train=False):
+    batch_loss = 0.
+    batch_acc = 0.
+    count = 0
+    for query in queries:
+        query_data = data_grouped[query]
+        for batch_start in range(0, len(query_data), config.opt.batch_size):
+            batch_data = query_data[batch_start:batch_start+config.opt.batch_size]
+            batch_size = len(batch_data)
+            count += batch_size
+            batch_input = np.zeros((batch_size,) + max_input_size)
+            for i, datum in enumerate(batch_data):
+                ds = datum.input.shape
+                batch_input[i,:ds[0],:ds[1],:ds[2]] = datum.input
+            batch_output = np.asarray([datum.output for datum in batch_data])
+            
             loss, acc = model.forward(query, batch_input, batch_output)
-            train_loss += loss
-            train_acc += acc
+            batch_loss += loss * batch_size
+            batch_acc += acc
+            if train:
+                model.train()
+            model.clear()
+    return batch_loss / count, batch_acc / count
+
+def simple_iter(data, model, train=False):
+    batch_loss = 0.
+    batch_acc = 0.
+    for i_datum in range(len(data)):
+        query = data[i_datum].query
+        batch_data = [data[i_datum]]
+        batch_input = np.asarray([d.input for d in batch_data])
+        batch_output = np.asarray([d.output for d in batch_data])
+        loss, acc = model.forward(query, batch_input, batch_output)
+        batch_loss += loss
+        batch_acc += acc
+        if train:
             model.train()
-            model.clear()
-        train_loss /= len(train_data)
-        train_acc /= len(train_data)
+        model.clear()
+    return batch_loss / len(data), batch_acc / len(data)
 
-        val_loss = 0.
-        val_acc = 0.
-        for i_datum in range(len(val_data)):
-            query = val_data[i_datum].query
-            batch_data = [val_data[i_datum]]
-            batch_input = np.asarray([d.input for d in batch_data])
-            batch_output = np.asarray([d.output for d in batch_data])
-            loss, acc = model.forward(query, batch_input, batch_output)
-            val_loss += loss
-            val_acc += acc
-            model.clear()
-        val_loss /= len(val_data)
-        val_acc /= len(val_data)
 
-        print "%2.4f  %2.4f  |  %2.4f  %2.4f" % (train_loss, train_acc,
-                                                 val_loss, val_acc)
-
+def by_query(data):
+    grouped = defaultdict(list)
+    for datum in data:
+        grouped[datum.query].append(datum)
+    return grouped
 
 if __name__ == "__main__":
     main()

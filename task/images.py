@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 
-import caffe.nmn
-import caffe.module
+from backend import caffe
+import embeddings
 
 from collections import defaultdict
 from datum import QueryDatum
@@ -22,7 +22,7 @@ def load_val():
     return load("val")
 
 def datum_filter(query, answer):
-  if not isinstance(query, tuple) or query[0] != "color":
+  if not isinstance(query, tuple) or query[0] != "color": # not in ("color", "where"): #, "what"):
     return False
   if isinstance(query[1], tuple):
     return False
@@ -89,7 +89,7 @@ def load(set_name):
     assert len(image_names) == len(i2i)
 
     images = dict()
-    for image_id, index in i2i.items()[:100]:
+    for image_id, index in i2i.items():
       try:
         images[image_id] = np.load("data/images/Images/%s2014/embedded/%s.npy" %
                 (short_set_name, image_names[index]))
@@ -115,16 +115,19 @@ def load(set_name):
         continue
 
       output = answer_index[answer.strip()]
-      #print query, answer, output
       if output is None:
         output = answer_index[UNKNOWN]
       name = image_names[i2i[image_id]]
+      #print query, answer.strip(), output,
+      #print image_id, name
       datum = QueryDatum(query, inp, output, image_names[i2i[image_id]])
       data.append(datum)
       answer_counter[answer.strip()] += 1
 
+      #break
+
   logging.info("%d items", len(data))
-  print answer_counter
+  logging.info("%d classes", len(answer_index))
   #exit()
   return data
 
@@ -134,17 +137,37 @@ PREPOSITIONS = set([
     "in", "on", "at", "by"
 ])
 
+EMBEDDINGS = dict()
+
+def ensure_embeddings(config):
+    if len(EMBEDDINGS) > 0:
+        return
+    embedding_matrix, embedding_index = \
+            embeddings.load(config.embedding_path)
+    EMBEDDINGS["matrix"] = embedding_matrix
+    EMBEDDINGS["index"] = embedding_index
+
+def build_caffe_support_module(apollo_net, config):
+    return caffe.module.NullModule()
+    #ensure_embeddings(config)
+    #return caffe.module.ProjectedEmbeddingModule(
+    #            EMBEDDINGS["matrix"], apollo_net)
+
 def build_caffe_module(name, arity, input_name, incoming_names, apollo_net, 
                        config):
     if arity == 1 and name in PREPOSITIONS:
         return caffe.module.IdentityModule()
     elif arity == 1:
         return caffe.module.AnswerModule(name, input_name, incoming_names,
-                                         apollo_net)
+                apollo_net)
     else:
         assert arity == 0
-        return caffe.module.ConvModule(name, config.hidden_size, input_name,
-                                       incoming_names, apollo_net)
+        ensure_embeddings(config)
+        return caffe.module.IndexedConvModule(
+                name, EMBEDDINGS["matrix"], EMBEDDINGS["index"],
+                config.hidden_size, input_name, incoming_names, apollo_net)
+        #return caffe.module.ConvModule(name, config.hidden_size, input_name,
+        #                               incoming_names, apollo_net)
 
 def build_caffe_loss_module(output_name, apollo_net):
     return caffe.module.ClassificationLogLossModule(output_name, apollo_net)

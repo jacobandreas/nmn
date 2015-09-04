@@ -1,6 +1,9 @@
 #!/usr/bin/env python2
 
+import caffe
 from nmn import NMNModel
+
+#caffe.set_mode_gpu()
 
 def build_model(config, opt_config):
     if config.name == "nmn":

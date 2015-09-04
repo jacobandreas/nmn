@@ -18,7 +18,7 @@ handlers:
 formatters:
   colorFormatter:
     '()': 'colorlog.ColoredFormatter'
-    format: "%(log_color)s%(levelname)-8s%(reset)s %(fg_cyan)s[%(name)s]%(reset)s %(message)s"
+    format: "%(asctime)s %(log_color)s%(levelname)-8s%(reset)s %(fg_cyan)s[%(name)s]%(reset)s %(message)s"
 
   simpleFormatter:
     format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
