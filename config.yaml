@@ -28,6 +28,7 @@ shapes_nmn: &shapes_nmn
   model: NMN
   input_type: ImageInput()
   output_type: Classification()
+  batch_size: 64
   model_params:
     module_builder: 
       class: ShapesModuleBuilder
@@ -41,7 +42,7 @@ shapes_nmn: &shapes_nmn
       filter_size: 3
       input_mid_pool: 5
       input_out_pool: 2
-      hidden_size: 32
+      hidden_size: 8
       vocab_size: 2
 
   corpus: shapes
@@ -54,8 +55,6 @@ images_nmn: &images_nmn
   model_params:
     module_builder:
       class: ImagesModuleBuilder
-      batch_size: 1
-      image_size: 6
       channels: 256
       vocab_size: 380
 

@@ -1,28 +1,28 @@
 #!/usr/bin/env python2
 
 import nmn
+
 from lasagne import nonlinearities
 from lasagne import nonlinearities, layers
 
 class ImagesModuleBuilder:
   def __init__(self, params):
-    self.batch_size = params["batch_size"]
-    self.image_size = params["image_size"]
     self.channels = params["channels"]
     self.vocab_size = params["vocab_size"]
+    self.meta_module = nmn.ConvWithEmbeddingMetaModule(256, 64)
 
   def build_input(self):
-    return layers.InputLayer((self.batch_size, self.channels, self.image_size,
-      self.image_size))
+    return layers.InputLayer((None, self.channels, None, None))
 
   def build(self, name, arity):
     if name == "_output":
-      return nmn.MLPModule(self.batch_size, self.image_size * self.image_size *
-          self.channels, 256, self.vocab_size,
-          output_nonlinearity=nonlinearities.softmax)
+      return nmn.AttentionModule(256, self.vocab_size)
 
     elif name == "_pre":
       return nmn.InputIdentityModule()
 
     else:
-      return nmn.IdentityModule()
+      if arity == 0:
+        return self.meta_module.get_module(name)
+      else:
+        return nmn.IdentityModule()

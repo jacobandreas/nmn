@@ -33,11 +33,15 @@ class ShapesModuleBuilder:
       return nmn.MLPModule(self.batch_size, self.out_filters * self.message_size *
           self.message_size, self.hidden_size, self.vocab_size,
           output_nonlinearity=nonlinearities.softmax)
+      #return nmn.MLPModule(self.batch_size, self.mid_filters *
+      #        self.pre_message_size *
+      #        self.pre_message_size, self.hidden_size, self.vocab_size,
+      #        output_nonlinearity = nonlinearities.softmax)
 
     elif name == "_pre":
-        return nmn.Conv1Module(self.batch_size, self.channels, self.image_size,
-                self.mid_filters, self.input_mid_filter_size,
-                self.input_mid_pool)
+      return nmn.Conv1Module(self.batch_size, self.channels, self.image_size,
+              self.mid_filters, self.input_mid_filter_size,
+              self.input_mid_pool)
 
     #elif arity == 0:
     #  return nmn.ConvModule(self.batch_size, self.channels, self.image_size,
@@ -48,14 +52,19 @@ class ShapesModuleBuilder:
       return nmn.Conv1Module(self.batch_size, self.mid_filters,
               self.pre_message_size, self.out_filters,
               self.input_out_filter_size, self.input_out_pool)
+      #return nmn.IdentityModule()
 
     elif name in ("left_of", "right_of", "above", "below"):
       #return nmn.MLPModule(self.batch_size, self.out_filters * self.message_size
       #    * self.message_size, self.hidden_size, self.out_filters * self.message_size
       #    * self.message_size)
+
       return nmn.Conv1Module(self.batch_size, self.out_filters,
               self.message_size, self.out_filters,
               self.filter_size, 1)
 
+      #return nmn.IdentityModule()
+
     elif arity == 2:
       return nmn.MinModule()
+      #return nmn.IdentityModule()
