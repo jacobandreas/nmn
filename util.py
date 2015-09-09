@@ -1,3 +1,31 @@
+class Struct:
+  def __init__(self, **entries):
+    rec_entries = {}
+    for k, v in entries.items():
+      if isinstance(v, dict):
+        rv = Struct(**v)
+      else:
+        rv = v
+      rec_entries[k] = rv
+    self.__dict__.update(rec_entries)
+
+  def __str_helper(self, depth):
+    lines = []
+    for k, v in self.__dict__.items():
+      if isinstance(v, Struct):
+        v_str = v.__str_helper(depth + 1)
+        lines.append("%s:\n%s" % (k, v_str))
+      else:
+        lines.append("%s: %r" % (k, v))
+    indented_lines = ["  " * depth + l for l in lines]
+    return "\n".join(indented_lines)
+
+  def __str__(self):
+    return "struct {\n%s\n}" % self.__str_helper(1)
+
+  def __repr__(self):
+    return "Struct(%r)" % self.__dict__
+
 class Index:
   def __init__(self):
     self.contents = dict()
@@ -25,16 +53,3 @@ class Index:
 
   def __iter__(self):
     return iter(self.ordered_contents)
-
-def chunks(l, n):
-  """Yield successive n-sized chunks from l."""
-  for i in xrange(0, len(l), n):
-    yield l[i:i+n]
-
-def strictChunks(l, n):
-  for i in xrange(0, len(l), n):
-    chunk = l[i:i+n]
-    # TODO(jda) not just wrap
-    if len(chunk) < n:
-      chunk += l[:n-len(chunk)]
-    yield chunk

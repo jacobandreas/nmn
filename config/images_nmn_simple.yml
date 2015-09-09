@@ -1,0 +1,23 @@
+backend: caffe
+
+corpus:
+  name: images
+  train_size: large
+
+model:
+  name: nmn
+  module_builder:
+    name: images
+    hidden_size: 64
+    embedding_path: data/embeddings/skipdep_lc
+
+opt:
+  batch_size: 128
+  learning_rate: 0.0001
+  momentum: 0.9
+  clip: 1
+  #epsilon: 0.000001
+  #rho: 0.95
+  #lr: 0.1
+  #clip: 1
+  iters: 1001
