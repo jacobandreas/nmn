@@ -50,13 +50,14 @@ class IndexedConvModule:
         self.embedding = embeddings[word_index,:].reshape((1,-1))
 
         self.vector_name = "IndexedConv_%s__vec" % name
-        self.proj_name = "IndexedConv_%s__proj" % name
+        #self.proj_name = "IndexedConv_%s__proj" % name
+        self.proj_name = "IndexedConv__proj"
 
-        self.conv1_name = "IndexedConv_%s__conv1" % name
-        self.relu1_name = "IndexedConv_%s__relu1" % name
-        self.bc_sum_name = "IndexedConv_%s__bc_sum" % name
-        self.conv2_name = "IndexedConv_%s__conv2" % name
-        self.relu2_name = "IndexedConv_%s__relu2" % name
+        self.conv1_name = "IndexedConv__conv1"
+        self.relu1_name = "IndexedConv__relu1"
+        self.bc_sum_name = "IndexedConv__bc_sum"
+        self.conv2_name = "IndexedConv__conv2" 
+        self.relu2_name = "IndexedConv__relu2"
         self.last_layer_name = self.relu2_name
 
         self.conv1_param0_name = "IndexedConv__conv1.0"
@@ -64,9 +65,9 @@ class IndexedConvModule:
         self.conv2_param0_name = "IndexedConv__conv2.0"
         self.conv2_param1_name = "IndexedConv__conv2.1"
 
-    #@profile
+    @profile
     def forward(self):
-        #input_shape = self.apollo_net.blobs[self.input_name].data.shape
+        batch_size, channels, width, height = self.apollo_net.blobs[self.input_name].shape
         #input_shape = str(self.apollo_net.blobs[self.input_name].data.shape)
 
         self.apollo_net.f(layers.NumpyData(
@@ -94,12 +95,27 @@ class IndexedConvModule:
             self.conv1_name, (1,1), self.hidden_size, bottoms=[self.input_name],
             param_names=[self.conv1_param0_name, self.conv1_param1_name]))
 
-        self.apollo_net.f(my_layers.BroadcastSum(
-            self.bc_sum_name, bottoms=[self.proj_name, self.conv1_name]))
+        ### self.apollo_net.f(my_layers.BroadcastSum(
+        ###     self.bc_sum_name, bottoms=[self.proj_name, self.conv1_name]))
+
+        t_batch_name = "t_batch_%d" % batch_size
+        t_width_name = "t_width_%d" % width
+        t_height_name = "t_height_%d" % height
+
+        self.apollo_net.blobs[self.proj_name].reshape((1, self.hidden_size, 1, 1))
+        self.apollo_net.f(layers.Tile(
+            t_batch_name, bottoms=[self.proj_name], axis=0, tiles=batch_size))
+        self.apollo_net.f(layers.Tile(
+            t_width_name, bottoms=[t_batch_name], axis=2, tiles=width))
+        self.apollo_net.f(layers.Tile(
+            t_height_name, bottoms=[t_width_name], axis=3, tiles=height))
+
+        self.apollo_net.f(layers.Eltwise(
+            self.bc_sum_name, bottoms=[t_height_name, self.conv1_name],
+            operation="SUM"))
 
         self.apollo_net.f(layers.ReLU(
             self.relu1_name, bottoms=[self.bc_sum_name]))
-
 
         self.apollo_net.f(layers.Convolution(
             self.conv2_name, (1,1), 1, bottoms=[self.relu1_name],
@@ -148,7 +164,7 @@ class AnswerModule:
         #self.last_layer_name = self.tile_layer_name
         self.last_layer_name = self.ip_layer_name
 
-    #@profile
+    @profile
     def forward(self):
         input_channels = self.apollo_net.blobs[self.input_name].shape[1]
         incoming_shape = tuple(self.apollo_net.blobs[self.incoming_names[0]].shape)
@@ -178,7 +194,7 @@ class DataModule:
         self.apollo_net = apollo_net
         self.last_layer_name = name
 
-    #@profile
+    @profile
     def forward(self, data):
         self.apollo_net.f(layers.NumpyData(self.last_layer_name, data=data))
 
@@ -190,7 +206,7 @@ class ClassificationLogLossModule:
         self.loss_name = "Loss__" + output_name
         self.i = 0
 
-    #@profile
+    @profile
     def forward(self, target):
         loss = self.apollo_net.f(layers.SoftmaxWithLoss(
             self.loss_name, bottoms=[self.output_name, self.target_name]))
@@ -204,7 +220,7 @@ class ClassificationAccuracyModule:
         self.target_name = "Target"
         self.acc_name = "Accuracy"
 
-    #@profile
+    @profile
     def forward(self, target):
         #print self.apollo_net.blobs[self.output_name].data
         return self.apollo_net.f(my_layers.Accuracy(

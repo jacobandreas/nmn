@@ -22,7 +22,7 @@ def load_val():
     return load("val")
 
 def datum_filter(query, answer):
-  if not isinstance(query, tuple) or query[0] != "color": # not in ("color", "where"): #, "what"):
+  if not isinstance(query, tuple) or query[0] not in ("color",): #, "what"):
     return False
   if isinstance(query[1], tuple):
     return False

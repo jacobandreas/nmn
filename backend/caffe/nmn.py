@@ -40,7 +40,7 @@ class ModuleNetwork:
 
         return module.last_layer_name
 
-    def forward(self, input, target):
+    def forward(self, input, target, compute_eval):
         self.input_module.forward(input)
         self.support_module.forward()
 
@@ -49,8 +49,11 @@ class ModuleNetwork:
 
         self.target_module.forward(target)
         loss = self.loss_module.forward(target)
-        eval = self.eval_module.forward(target)
-        return loss, eval
+        if compute_eval:
+            eval = self.eval_module.forward(target)
+            return loss, eval
+        else:
+            return loss, None
 
 class NMNModel:
     def __init__(self, config, opt_config):
@@ -68,54 +71,38 @@ class NMNModel:
         self.sq_grads = dict()
         self.sq_updates = dict()
 
-        self.loaded = False
-
-    def forward(self, query, input, target):
+    def forward(self, query, input, target, compute_eval=False):
         assert self.current_net is None
         self.apollo_net.clear_forward()
         self.current_net = self.get_net(query)
-        return self.current_net.forward(input, target)
+        return self.current_net.forward(input, target, compute_eval)
 
     def train(self):
         assert self.current_net is not None
         self.apollo_net.backward()
-        #print self.apollo_net.blobs["Answer_color__ip"].data
-        #print self.apollo_net.params["Answer_color__ip.p0"].data
-        #print np.sum(self.apollo_net.params["Answer_color__ip.p0"].data)
-        #print np.sum(np.square(self.apollo_net.params["Answer_color__ip.p0"].data))
-        #self.update()
-
         self.apollo_net.update(lr=self.opt_config.learning_rate,
                                momentum=self.opt_config.momentum,
                                clip_gradients=self.opt_config.clip)
-        return
-
-        if not self.loaded:
-            self.loaded = True
-            self.apollo_net.params["Answer_color__ip.p0"].data[...] = \
-                np.load("../nmn/weights/_output-1.w.npy").T
-            self.apollo_net.params["Answer_color__ip.p1"].data[...] = \
-                np.load("../nmn/weights/_output-1.b.npy")
-            self.apollo_net.params["IndexedConv__conv1.0"].data[...] = \
-                np.load("../nmn/weights/conv_with_embedding.w_hidden.npy").T.reshape((64,356,1,1))
-            self.apollo_net.params["IndexedConv__conv1.1"].data[...] = \
-                np.load("../nmn/weights/conv_with_embedding.b_hidden.npy")
-            self.apollo_net.params["IndexedConv__conv2.0"].data[...] = \
-                np.load("../nmn/weights/conv_with_embedding.w_out.npy").T.reshape((1,64,1,1))
-            self.apollo_net.params["IndexedConv__conv2.1"].data[...] = \
-                np.load("../nmn/weights/conv_with_embedding.b_out.npy")
-        else:
-            #pass
-            self.update()
 
     def update(self):
         rho = self.opt_config.rho
         epsilon = self.opt_config.epsilon
         lr = self.opt_config.lr
         clip = self.opt_config.clip
+
+        all_norm = 0.
         for param_name in self.apollo_net.active_param_names():
             param = self.apollo_net.params[param_name]
             grad = param.diff
+            all_norm += np.sum(np.square(grad))
+        all_norm = np.sqrt(all_norm)
+
+        for param_name in self.apollo_net.active_param_names():
+            param = self.apollo_net.params[param_name]
+            grad = param.diff
+
+            if all_norm > clip:
+                grad = clip * grad / all_norm
 
             if param_name in self.sq_grads:
                 self.sq_grads[param_name] = \
@@ -123,20 +110,22 @@ class NMNModel:
                 rms_update = np.sqrt(self.sq_updates[param_name] + epsilon)
                 rms_grad = np.sqrt(self.sq_grads[param_name] + epsilon)
                 update = -rms_update / rms_grad * grad
+
                 self.sq_updates[param_name] = \
                     (1 - rho) * np.square(update) + rho * self.sq_updates[param_name]
             else:
                 self.sq_grads[param_name] = (1 - rho) * np.square(grad)
-                update = np.sqrt(epsilon + self.sq_grads[param_name])
+                update = np.sqrt(epsilon) / np.sqrt(epsilon +
+                        self.sq_grads[param_name]) * grad
                 self.sq_updates[param_name] = (1 - rho) * np.square(update)
 
-            update *= lr
-
-            norm = np.sqrt(np.sum(np.square(update)))
-            if norm > clip:
-                update = clip * update / norm
+            #print np.sum(np.square(update))
+            #print param.data.shape
+            #print update.shape
             
             param.data[...] += update
+            #print np.sqrt(np.sum(np.square(param.data)))
+        #print
 
     def clear(self):
         self.current_net = None
