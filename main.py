@@ -48,15 +48,15 @@ def main():
     for i_iter in range(config.opt.iters):
         do_eval = i_iter % 5 == 0
         np.random.shuffle(train_queries)
-        train_loss, train_acc = batched_iter(train_queries, train_data_grouped,
-                max_input_size, model, config, train=True, compute_eval=do_eval)
-        #np.random.shuffle(train_data)
-        #train_loss, train_acc = simple_iter(train_data, model, train=True,
-        #        compute_eval=do_eval)
+        #train_loss, train_acc = batched_iter(train_queries, train_data_grouped,
+        #        max_input_size, model, config, train=True, compute_eval=do_eval)
+        np.random.shuffle(train_data)
+        train_loss, train_acc = simple_iter(train_data, model, train=True,
+                compute_eval=do_eval)
         if do_eval:
-            #val_loss, val_acc = simple_iter(val_data, model, compute_eval=True)
-            val_loss, val_acc = batched_iter(val_queries, val_data_grouped,
-                    max_input_size, model, config, compute_eval=True)
+            val_loss, val_acc = simple_iter(val_data, model, compute_eval=True)
+            #val_loss, val_acc = batched_iter(val_queries, val_data_grouped,
+            #        max_input_size, model, config, compute_eval=True)
             logging.info("%2.4f  %2.4f  :  %2.4f  %2.4f",
                     train_loss, train_acc, val_loss, val_acc)
         else:
@@ -82,7 +82,7 @@ def batched_iter(queries, data_grouped, max_input_size, model, config,
             
             loss, acc = model.forward(query, batch_input, batch_output,
                                       compute_eval)
-            batch_loss += loss * batch_size
+            batch_loss += loss
             if compute_eval:
                 batch_acc += acc
             if train:

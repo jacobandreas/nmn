@@ -204,13 +204,12 @@ class ClassificationLogLossModule:
         self.output_name = output_name
         self.target_name = "Target"
         self.loss_name = "Loss__" + output_name
-        self.i = 0
 
     @profile
     def forward(self, target):
         loss = self.apollo_net.f(layers.SoftmaxWithLoss(
-            self.loss_name, bottoms=[self.output_name, self.target_name]))
-        self.i += 1
+            self.loss_name, bottoms=[self.output_name, self.target_name],
+            normalize=False))
         return loss
 
 class ClassificationAccuracyModule:
