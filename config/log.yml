@@ -13,7 +13,7 @@ handlers:
   fileHandler:
     class: logging.FileHandler
     formatter: simpleFormatter
-    filename: "nmn.log"
+    filename: "lstm2.log"
 
 formatters:
   colorFormatter:

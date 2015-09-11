@@ -47,7 +47,7 @@ def main():
 
     for i_iter in range(config.opt.iters):
         do_eval = i_iter % 5 == 0
-        np.random.shuffle(train_queries)
+        #np.random.shuffle(train_queries)
         #train_loss, train_acc = batched_iter(train_queries, train_data_grouped,
         #        max_input_size, model, config, train=True, compute_eval=do_eval)
         np.random.shuffle(train_data)

@@ -5,11 +5,15 @@ corpus:
   train_size: large
 
 model:
-  name: nmn
-  module_builder:
-    name: images
-    hidden_size: 128
-    embedding_path: data/embeddings/skipdep_lc
+  name: lstm
+  question_mode: query
+  hidden_size: 32
+  image_before: true
+  image_after: true
+  #layer_builder:
+  #  name: images
+  #  embedding_path: data/embeddings/skipdep_lc
+
 
 opt:
   batch_size: 128

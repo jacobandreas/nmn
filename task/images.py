@@ -174,3 +174,14 @@ def build_caffe_loss_module(output_name, apollo_net):
 
 def build_caffe_eval_module(output_name, apollo_net):
     return caffe.module.ClassificationAccuracyModule(output_name, apollo_net)
+
+def get_indices(question, config):
+    ensure_embeddings(config)
+    indexed = []
+    for w in question:
+        if w in EMBEDDINGS["index"]:
+            index = EMBEDDINGS["index"][w]
+        else:
+            index = EMBEDDINGS["index"][UNKNOWN]
+        indexed.append(w)
+    return indexed
