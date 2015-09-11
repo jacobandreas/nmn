@@ -4,7 +4,7 @@ import caffe
 from nmn import NMNModel
 from lstm import LSTMModel
 
-caffe.set_mode_gpu()
+#caffe.set_mode_gpu()
 
 def build_model(config, opt_config):
     if config.name == "nmn":

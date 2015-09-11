@@ -24,7 +24,11 @@ def main():
     args = arg_parser.parse_args()
 
     with open(args.log_config) as log_config_f:
-        logging.config.dictConfig(yaml.load(log_config_f))
+        config_name = args.config.split("/")[-1].split(".")[0]
+        log_filename = "%s.log" % config_name
+        log_config = yaml.load(log_config_f)
+        log_config["handlers"]["fileHandler"]["filename"] = log_filename
+        logging.config.dictConfig(log_config)
 
     with open(args.config) as config_f:
         config = util.Struct(**yaml.load(config_f))
@@ -33,6 +37,9 @@ def main():
 
     train_data = corpus.load_train(config.corpus.train_size)
     val_data = corpus.load_val()
+    n_val = len(val_data) / 2
+    test_data = val_data[n_val:]
+    val_data = val_data[:n_val]
 
     backend = importlib.import_module("backend.%s" % config.backend)
     model = backend.build_model(config.model, config.opt)
@@ -55,10 +62,11 @@ def main():
                 compute_eval=do_eval)
         if do_eval:
             val_loss, val_acc = simple_iter(val_data, model, compute_eval=True)
+            test_loss, test_acc = simple_iter(test_data, model, compute_eval=True)
             #val_loss, val_acc = batched_iter(val_queries, val_data_grouped,
             #        max_input_size, model, config, compute_eval=True)
-            logging.info("%2.4f  %2.4f  :  %2.4f  %2.4f",
-                    train_loss, train_acc, val_loss, val_acc)
+            logging.info("%2.4f  %2.4f  %2.4f  :  %2.4f  %2.4f  %2.4f",
+                    train_loss, val_loss, test_loss, train_acc, val_acc, test_acc)
         else:
             logging.info("%2.4f", train_loss)
 

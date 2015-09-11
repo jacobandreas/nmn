@@ -12,7 +12,7 @@ model:
     embedding_path: data/embeddings/skipdep_lc
 
 opt:
-  batch_size: 128
+  batch_size: 64
   learning_rate: 0.0001
   momentum: 0.9
   clip: 1
