@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 
-from backend import caffe
 import embeddings
+import models
 
 from collections import defaultdict
 from datum import QueryDatum
@@ -22,7 +22,11 @@ def load_val():
     return load("val")
 
 def datum_filter(query, answer):
-  if not isinstance(query, tuple) or query[0] not in ("color",): #, "what"):
+  if not isinstance(query, tuple) or query[0] not in \
+      (
+        "count",
+        "color",
+      ): #, "what"):
     return False
   if isinstance(query[1], tuple):
     return False
@@ -91,6 +95,10 @@ def load(set_name):
     images = dict()
     for image_id, index in i2i.items():
       try:
+        image = np.load("data/images/Images/%s2014/embedded/%s.npy" %
+                (short_set_name, image_names[index]))
+        if image.shape[1] <= 5 or image.shape[2] <= 5:
+            raise IOError("bad shape")
         images[image_id] = np.load("data/images/Images/%s2014/embedded/%s.npy" %
                 (short_set_name, image_names[index]))
       except IOError as e:
@@ -128,6 +136,10 @@ def load(set_name):
 
   logging.info("%d items", len(data))
   logging.info("%d classes", len(answer_index))
+  
+  count_pairs = sorted([(v, k) for k, v in answer_counter.items()])
+  for pair in count_pairs:
+      logging.info("%4d: %s" % pair)
   #exit()
   return data
 
@@ -147,33 +159,35 @@ def ensure_embeddings(config):
     EMBEDDINGS["matrix"] = embedding_matrix
     EMBEDDINGS["index"] = embedding_index
 
-def build_caffe_support_module(apollo_net, config):
-    return caffe.module.NullModule()
-    #ensure_embeddings(config)
-    #return caffe.module.ProjectedEmbeddingModule(
-    #            EMBEDDINGS["matrix"], apollo_net)
+def build_support_module(apollo_net, config):
+    return models.modules.NullModule()
 
-def build_caffe_module(name, arity, input_name, incoming_names, apollo_net, 
+def build_module(name, arity, input_name, incoming_names, apollo_net, 
                        config):
     if arity == 1 and name in PREPOSITIONS:
-        return caffe.module.IdentityModule()
-    elif arity == 1:
-        return caffe.module.AnswerModule(name, input_name, incoming_names,
+        return models.modules.IdentityModule()
+    elif arity == 1 and name == "color":
+        return models.modules.AttAnswerModule(name, input_name, incoming_names,
                 apollo_net)
+    elif arity == 1 and name == "count":
+        return models.modules.DenseAnswerModule(name, config.hidden_size,
+                incoming_names, apollo_net)
     else:
         assert arity == 0
         ensure_embeddings(config)
-        return caffe.module.IndexedConvModule(
+        return models.modules.IndexedConvModule(
                 name, EMBEDDINGS["matrix"], EMBEDDINGS["index"],
                 config.hidden_size, input_name, incoming_names, apollo_net)
-        #return caffe.module.ConvModule(name, config.hidden_size, input_name,
-        #                               incoming_names, apollo_net)
 
-def build_caffe_loss_module(output_name, apollo_net):
-    return caffe.module.ClassificationLogLossModule(output_name, apollo_net)
+def build_loss_module(output_name, apollo_net):
+    return models.modules.ClassificationLogLossModule(output_name, apollo_net)
 
-def build_caffe_eval_module(output_name, apollo_net):
-    return caffe.module.ClassificationAccuracyModule(output_name, apollo_net)
+def build_eval_module(output_name, apollo_net):
+    return models.modules.ClassificationAccuracyModule(output_name, apollo_net)
+
+def build_reading_module(output_name, apollo_net, config):
+    return models.modules.LSTMModule(
+            config.hidden_size, output_name, apollo_net)
 
 def get_indices(question, config):
     ensure_embeddings(config)

@@ -1,6 +1,7 @@
 #!/usr/bin/env python2
 
-import module
+import modules
+import util
 
 import apollocaffe
 import itertools
@@ -8,21 +9,30 @@ import importlib
 import numpy as np
 
 class ModuleNetwork:
-    def __init__(self, query, model):
+    def __init__(self, query, model, include_reading_module=False):
         self.input_module = model.get_input_module()
         self.support_module = model.get_support_module()
 
         self.modules = []
         self.wire(self.modules, query, model)
 
+        output_name = self.modules[-1].output_name
+        if include_reading_module:
+            self.reading_module = model.get_reading_module(output_name)
+            output_name = self.reading_module.output_name
+        else:
+            self.reading_module = None
+
         self.target_module = model.get_target_module()
-        self.loss_module = model.get_loss_module(self.modules[-1].last_layer_name)
-        self.eval_module = model.get_eval_module(self.modules[-1].last_layer_name)
+        self.loss_module = model.get_loss_module(output_name)
+        self.eval_module = model.get_eval_module(output_name)
+
+        self.tokens = util.flatten(query)
 
     def wire(self, modules, query, model):
         if not isinstance(query, tuple):
             module = model.get_module(
-                    query, 0, self.input_module.last_layer_name, [])
+                    query, 0, self.input_module.output_name, [])
             modules.append(module)
         else:
             head = query[0]
@@ -34,11 +44,11 @@ class ModuleNetwork:
 
             module = model.get_module(query[0], 
                                       arity,
-                                      self.input_module.last_layer_name,
+                                      self.input_module.output_name,
                                       children)
             modules.append(module)
 
-        return module.last_layer_name
+        return module.output_name
 
     def forward(self, input, target, compute_eval):
         self.input_module.forward(input)
@@ -46,6 +56,9 @@ class ModuleNetwork:
 
         for module in self.modules:
             module.forward()
+
+        if self.reading_module is not None:
+            self.reading_module.forward(self.tokens)
 
         self.target_module.forward(target)
         loss = self.loss_module.forward(target)
@@ -132,29 +145,33 @@ class NMNModel:
 
     def get_net(self, query):
         if query not in self.nets:
-            net = ModuleNetwork(query, self)
+            net = ModuleNetwork(query, self, self.config.include_reading_module)
             self.nets[query] = net
         return self.nets[query]
 
     def get_module(self, name, arity, input_name, incoming_names):
-        return self.module_builder.build_caffe_module(
+        return self.module_builder.build_module(
                 name, arity, input_name, incoming_names, self.apollo_net,
                 self.config.module_builder)
 
     def get_input_module(self):
-        return module.DataModule("Input", self.apollo_net)
+        return modules.DataModule("Input", self.apollo_net)
 
     def get_support_module(self):
-        return self.module_builder.build_caffe_support_module(
+        return self.module_builder.build_support_module(
                 self.apollo_net, self.config.module_builder)
 
     def get_target_module(self):
-        return module.DataModule("Target", self.apollo_net)
+        return modules.DataModule("Target", self.apollo_net)
 
     def get_loss_module(self, output_name):
-        return self.module_builder.build_caffe_loss_module(
+        return self.module_builder.build_loss_module(
                 output_name, self.apollo_net)
 
     def get_eval_module(self, output_name):
-        return self.module_builder.build_caffe_eval_module(
+        return self.module_builder.build_eval_module(
                 output_name, self.apollo_net)
+
+    def get_reading_module(self, output_name):
+        return self.module_builder.build_reading_module(
+                output_name, self.apollo_net, self.config.module_builder)

@@ -1,9 +1,12 @@
 #!/usr/bin.env python2
 
 import my_layers
+from util import Index
 
 from apollocaffe import layers
 import numpy as np
+
+N_CLASSES = 100
 
 class NullModule:
     def forward(self):
@@ -11,7 +14,7 @@ class NullModule:
 
 class IdentityModule:
     def __init__(self, name, input_name, incoming_names, apollo_net):
-        self.last_layer_name = "Ident_%s" % name
+        self.output_name = "Ident_%s" % name
 
     def forward(self):
         assert False
@@ -26,13 +29,83 @@ class ConvModule:
 
         self.conv_name = "Conv_%s__conv" % name
         self.relu_name = "Conv_%s__relu" % name
-        self.last_layer_name = self.relu_name
+        self.output_name = self.relu_name
 
     def forward(self):
         self.apollo_net.f(layers.Convolution(
             self.conv_name, (1,1), 1, bottoms=[self.input_name]))
 
         self.apollo_net.f(layers.ReLU(self.relu_name, bottoms=[self.conv_name]))
+
+class LSTMModule:
+    # index is shared across module instances
+    index = Index()
+
+    def __init__(self, hidden_size, incoming_name, apollo_net):
+        self.hidden_size = hidden_size
+        self.incoming_name = incoming_name
+        self.apollo_net = apollo_net
+
+        self.seed_name = "LSTM__seed"
+        self.hidden_name = "LSTM__hidden_%d"
+        self.mem_name = "LSTM__mem_%d"
+        self.word_name = "LSTM__word_%d"
+        self.wordvec_name = "LSTM__wordvec_%d"
+        self.concat_name = "LSTM__concat_%d"
+        self.lstm_name = "LSTM__lstm_%d"
+        self.ip_name = "LSTM__ip"
+        self.relu_name = "LSTM__relu"
+        self.sum_name = "LSTM__sum"
+
+        self.output_name = self.sum_name
+
+        self.wordvec_param_name = "LSTM__wordvec_param"
+        self.input_value_param_name = "LSTM__input_value_param"
+        self.input_gate_param_name = "LSTM__input_gate_param"
+        self.forget_gate_param_name = "LSTM__forget_gate_param"
+        self.output_gate_param_name = "LSTM__output_gate_param"
+
+    def forward(self, tokens):
+        indexed_tokens = [self.index.index(tok) for tok in tokens]
+        net = self.apollo_net
+
+        net.f(layers.NumpyData(
+            self.seed_name, np.zeros((1, self.hidden_size))))
+
+        for t in range(len(indexed_tokens)):
+            word_name = self.word_name % t
+            wordvec_name = self.wordvec_name % t
+            concat_name = self.concat_name % t
+            lstm_name = self.lstm_name % t
+            hidden_name = self.hidden_name % t
+            mem_name =self.mem_name % t
+            if t == 0:
+                prev_hidden = self.seed_name
+                prev_mem = self.seed_name
+            else:
+                prev_hidden = self.hidden_name % (t - 1)
+                prev_mem = self.mem_name % (t - 1)
+
+            net.f(layers.NumpyData(word_name, np.asarray([indexed_tokens[t]])))
+            net.f(layers.Wordvec(
+                wordvec_name, self.hidden_size, 2000,
+                bottoms=[word_name], param_names=[self.wordvec_param_name]))
+            net.f(layers.Concat(concat_name, bottoms=[prev_hidden, wordvec_name]))
+            net.f(layers.LstmUnit(
+                lstm_name, bottoms=[concat_name, prev_mem],
+                param_names=[self.input_value_param_name,
+                             self.input_gate_param_name,
+                             self.forget_gate_param_name,
+                             self.output_gate_param_name],
+                tops=[hidden_name, mem_name], num_cells=self.hidden_size))
+
+        net.f(layers.InnerProduct(
+            self.ip_name, N_CLASSES, bottoms=[hidden_name]))
+        net.f(layers.ReLU(self.relu_name, bottoms=[self.ip_name]))
+        net.f(layers.Eltwise(
+            self.sum_name, bottoms=[self.relu_name, self.incoming_name],
+            operation="SUM"))
+
 
 class IndexedConvModule:
     def __init__(self, name, embeddings, embedding_index, hidden_size,
@@ -58,12 +131,12 @@ class IndexedConvModule:
         self.bc_sum_name = "IndexedConv__bc_sum"
         self.conv2_name = "IndexedConv__conv2" 
         self.relu2_name = "IndexedConv__relu2"
-        self.last_layer_name = self.relu2_name
+        self.output_name = self.relu2_name
 
-        self.conv1_param0_name = "IndexedConv__conv1.0"
-        self.conv1_param1_name = "IndexedConv__conv1.1"
-        self.conv2_param0_name = "IndexedConv__conv2.0"
-        self.conv2_param1_name = "IndexedConv__conv2.1"
+        self.conv1_param0_name = "IndexedConv__conv1.0_param"
+        self.conv1_param1_name = "IndexedConv__conv1.1_param"
+        self.conv2_param0_name = "IndexedConv__conv2.0_param"
+        self.conv2_param1_name = "IndexedConv__conv2.1_param"
 
     @profile
     def forward(self):
@@ -144,7 +217,38 @@ class IndexedConvModule:
 #                 embeddings[word] = vec
 #         return embeddings
 
-class AnswerModule:
+class DenseAnswerModule:
+    def __init__(self, name, hidden_size, incoming_names, apollo_net):
+        self.name = name
+        self.hidden_size = hidden_size
+        assert len(incoming_names) == 1
+        self.incoming_name = incoming_names[0]
+        self.apollo_net = apollo_net
+
+        name_prefix = "DenseAnswer_%s__" % name
+        self.conv1_name = name_prefix + "conv1"
+        self.relu1_name = name_prefix + "relu1"
+        #self.conv2_name = name_prefix + "conv2"
+        #self.relu2_name = name_prefix + "relu2"
+        self.collapse_name = name_prefix + "collapse"
+        self.ip_name = name_prefix + "ip"
+
+        self.output_name = self.ip_name
+
+    @profile
+    def forward(self):
+        self.apollo_net.f(layers.Convolution(
+            self.conv1_name, (5, 5), 1, bottoms=[self.incoming_name]))
+        self.apollo_net.f(layers.ReLU(self.relu1_name, bottoms=[self.conv1_name]))
+        #self.apollo_net.f(layers.Convolution(
+        #    self.conv2_name, (1, 1), 1, bottoms=[self.relu1_name]))
+        #self.apollo_net.f(layers.ReLU(self.relu2_name, bottoms=[self.conv2_name]))
+        self.apollo_net.f(my_layers.Collapse(
+            self.collapse_name, bottoms=[self.relu1_name]))
+        self.apollo_net.f(layers.InnerProduct(
+            self.ip_name, N_CLASSES, bottoms=[self.collapse_name]))
+
+class AttAnswerModule:
     def __init__(self, name, input_name, incoming_names, apollo_net):
         self.name = name
         self.input_name = input_name
@@ -153,7 +257,7 @@ class AnswerModule:
         self.apollo_net = apollo_net
 
 
-        name_prefix = "Answer_%s__" % name
+        name_prefix = "AttAnswer_%s__" % name
         self.flatten_layer_name = name_prefix + "flatten"
         self.softmax_layer_name = name_prefix + "softmax"
         self.reshape_layer_name = name_prefix + "reshape"
@@ -161,8 +265,8 @@ class AnswerModule:
         self.ip_layer_name = name_prefix + "ip"
         #self.prediction_layer_name = name_prefix + "pred"
 
-        #self.last_layer_name = self.tile_layer_name
-        self.last_layer_name = self.ip_layer_name
+        #self.output_name = self.tile_layer_name
+        self.output_name = self.ip_layer_name
 
     @profile
     def forward(self):
@@ -186,17 +290,17 @@ class AnswerModule:
 
         self.apollo_net.f(layers.InnerProduct(
                 self.ip_layer_name,
-                1000,
+                N_CLASSES,
                 bottoms=[self.attention_layer_name]))
 
 class DataModule:
     def __init__(self, name, apollo_net):
         self.apollo_net = apollo_net
-        self.last_layer_name = name
+        self.output_name = name
 
     @profile
     def forward(self, data):
-        self.apollo_net.f(layers.NumpyData(self.last_layer_name, data=data))
+        self.apollo_net.f(layers.NumpyData(self.output_name, data=data))
 
 class ClassificationLogLossModule:
     def __init__(self, output_name, apollo_net):

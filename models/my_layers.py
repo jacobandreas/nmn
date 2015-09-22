@@ -38,6 +38,31 @@ class Accuracy(Layer):
         pass
         #raise NotImplementedError()
 
+class Collapse(Layer):
+    def __init__(self, name, **kwargs):
+        super(Collapse, self).__init__(self, name, kwargs)
+        self.kwargs = kwargs
+        self.p.type = "Py"
+
+    def setup(self, bottom, top):
+        input = T.tensor4("input")
+        v = T.matrix("v")
+        result = T.sum(input, axis=(2,3))
+        result_g = T.Lop(result, input, v)
+        self.f = theano.function([input], result)
+        self.b = theano.function([input, v], result_g)
+
+    def forward(self, bottom, top):
+        input = bottom[0]
+        top[0].reshape(input.shape[0:2])
+        top[0].data[...] = self.f(input.data)
+        return 0
+
+    def backward(self, top, bottom):
+        input = bottom[0]
+        v = top[0].diff
+        input.diff[...] += self.b(input.data, v)
+
 class Attention(Layer):
     def __init__(self, name, **kwargs):
         super(Attention, self).__init__(self, name, kwargs)

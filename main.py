@@ -1,5 +1,10 @@
 #!/usr/bin/env python2
 
+# check profiler
+if not isinstance(__builtins__, dict) or "profile" not in __builtins__:
+    __builtins__.__dict__["profile"] = lambda x: x
+
+import models
 import util
 
 import argparse
@@ -15,10 +20,6 @@ arg_parser.add_argument("-c", "--config", dest="config", required=True,
                         help="model configuration file")
 arg_parser.add_argument("-l", "--log-config", dest="log_config", 
                         default="config/log.yml", help="log configuration file")
-
-# check profiler
-if not isinstance(__builtins__, dict) or "profile" not in __builtins__:
-    __builtins__.__dict__["profile"] = lambda x: x
 
 def main():
     args = arg_parser.parse_args()
@@ -41,8 +42,7 @@ def main():
     test_data = val_data[n_val:]
     val_data = val_data[:n_val]
 
-    backend = importlib.import_module("backend.%s" % config.backend)
-    model = backend.build_model(config.model, config.opt)
+    model = models.build_model(config.model, config.opt)
 
     train_data_grouped = by_query(train_data)
     train_queries = train_data_grouped.keys()
