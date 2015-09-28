@@ -7,25 +7,36 @@ import numpy as np
 #caffe.set_mode_gpu()
 net = ApolloNet()
 
-@profile
-def main():
-    for i in range(1000):
-        net.clear_forward()
-        net.f(layers.NumpyData("input", data=np.random.random((256, 8, 20, 20))))
-        net.f(layers.NumpyData("target", data=np.random.randint(32, size=(256,))))
-        net.f(layers.InnerProduct("ip1", 32, bottoms=["input"]))
-        net.f(layers.SoftmaxWithLoss("loss", bottoms=["ip1", "target"]))
-        net.backward()
+net.clear_forward()
+net.f(layers.NumpyData("words", data=np.random.randint(10, size=(7,))))
+print net.blobs["words"].shape
+net.f(layers.Wordvec("vecs", 10, 10, bottoms=["words"]))
+print net.blobs["vecs"].shape
 
-        net.clear_forward()
-        net.f(layers.NumpyData("input", data=np.random.random((256, 8, 20, 20))))
-        net.f(layers.NumpyData("target", data=np.random.randint(32, size=(256,))))
-        net.f(layers.InnerProduct("ip2", 32, bottoms=["input"]))
-        net.f(layers.SoftmaxWithLoss("loss2", bottoms=["ip2", "target"]))
-        net.backward()
+net.clear_forward()
+net.f(layers.NumpyData("words", data=np.random.randint(10, size=(14,))))
+print net.blobs["words"].shape
+net.f(layers.Wordvec("vecs", 10, 10, bottoms=["words"]))
+print net.blobs["vecs"].shape
 
-main()
-
+#@profile
+#def main():
+#    for i in range(1000):
+#        net.clear_forward()
+#        net.f(layers.NumpyData("input", data=np.random.random((256, 8, 20, 20))))
+#        net.f(layers.NumpyData("target", data=np.random.randint(32, size=(256,))))
+#        net.f(layers.InnerProduct("ip1", 32, bottoms=["input"]))
+#        net.f(layers.SoftmaxWithLoss("loss", bottoms=["ip1", "target"]))
+#        net.backward()
+#
+#        net.clear_forward()
+#        net.f(layers.NumpyData("input", data=np.random.random((256, 8, 20, 20))))
+#        net.f(layers.NumpyData("target", data=np.random.randint(32, size=(256,))))
+#        net.f(layers.InnerProduct("ip2", 32, bottoms=["input"]))
+#        net.f(layers.SoftmaxWithLoss("loss2", bottoms=["ip2", "target"]))
+#        net.backward()
+#
+#main()
 
 #print net.blobs["output"].data
 #

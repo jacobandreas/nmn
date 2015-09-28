@@ -148,3 +148,40 @@ class BroadcastSum(Layer):
         v = top[0].diff
         small.diff[...] += self.b_small(v)
         big.diff[...] += self.b_big(v)
+
+class FeatureDot(Layer):
+    def __init__(self, name, **kwargs):
+        super(FeatureDot, self).__init__(self, name, kwargs)
+        self.kwargs = kwargs
+        self.p.type = "Py"
+
+    def setup(self, bottom, top):
+        a = T.tensor4("a")
+        b = T.tensor4("b")
+        v = T.tensor3("v")
+
+        dot = a * b
+        result = T.sum(dot, axis=1)
+
+        g_a, g_b = T.Lop(result, [a, b], v)
+        self.f = theano.function([a, b], result)
+        self.b_a = theano.function([a, b, v], g_a)
+        self.b_b = theano.function([a, b, v], g_b)
+
+    def forward(self, bottom, top):
+        a, b = bottom
+        result = self.f(a.data, b.data)
+        nb, nr, nc = result.shape
+        result.shape = (nb, 1, nr, nc)
+        top[0].reshape(result.shape)
+        top[0].data[...] = result
+        return 0
+
+    def backward(self, top, bottom):
+        nb, nf, nr, nc = bottom[0].shape
+        # TODO why is this necessary?
+        top[0].reshape((nb, nr, nc))
+        a, b = bottom
+        v = top[0].diff
+        a.diff[...] += self.b_a(a.data, b.data, v)
+        b.diff[...] += self.b_b(a.data, b.data, v)

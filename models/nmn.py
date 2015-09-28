@@ -2,11 +2,21 @@
 
 import modules
 import util
+from visualizer import visualizer
 
 import apollocaffe
 import itertools
 import importlib
 import numpy as np
+
+# TODO consolidate with wire()
+def linearize(lin, indices):
+    if isinstance(indices, tuple):
+        for i in indices[1:]:
+            linearize(lin, i)
+        lin.append(indices[0])
+    else:
+        lin.append(indices)
 
 class ModuleNetwork:
     def __init__(self, query, model, include_reading_module=False):
@@ -26,8 +36,6 @@ class ModuleNetwork:
         self.target_module = model.get_target_module()
         self.loss_module = model.get_loss_module(output_name)
         self.eval_module = model.get_eval_module(output_name)
-
-        self.tokens = util.flatten(query)
 
     def wire(self, modules, query, model):
         if not isinstance(query, tuple):
@@ -50,15 +58,15 @@ class ModuleNetwork:
 
         return module.output_name
 
-    def forward(self, input, target, compute_eval):
+    def forward(self, indices, input, target, compute_eval):
         self.input_module.forward(input)
         self.support_module.forward()
 
-        for module in self.modules:
-            module.forward()
+        for module, mod_indices in zip(self.modules, indices):
+            module.forward(mod_indices)
 
         if self.reading_module is not None:
-            self.reading_module.forward(self.tokens)
+            self.reading_module.forward(indices)
 
         self.target_module.forward(target)
         loss = self.loss_module.forward(target)
@@ -73,9 +81,6 @@ class NMNModel:
         self.config = config
         self.opt_config = opt_config
 
-        self.module_builder = importlib.import_module(
-                "task.%s" % config.module_builder.name)
-
         self.nets = dict()
         self.current_net = None
 
@@ -84,11 +89,13 @@ class NMNModel:
         self.sq_grads = dict()
         self.sq_updates = dict()
 
-    def forward(self, query, input, target, compute_eval=False):
+    def forward(self, layout_type, indices, input, target, compute_eval=False):
         assert self.current_net is None
         self.apollo_net.clear_forward()
-        self.current_net = self.get_net(query)
-        return self.current_net.forward(input, target, compute_eval)
+        self.current_net = self.get_net(layout_type)
+        lin_indices = []
+        linearize(lin_indices, indices)
+        return self.current_net.forward(lin_indices, input, target, compute_eval)
 
     def train(self):
         assert self.current_net is not None
@@ -149,29 +156,32 @@ class NMNModel:
             self.nets[query] = net
         return self.nets[query]
 
-    def get_module(self, name, arity, input_name, incoming_names):
-        return self.module_builder.build_module(
-                name, arity, input_name, incoming_names, self.apollo_net,
-                self.config.module_builder)
+    def get_module(self, module, arity, input_name, incoming_names):
+        if module == modules.IndexedConvModule:
+            assert len(incoming_names) == 0
+            return module(self.config.hidden_size, input_name, self.apollo_net)
+        elif module == modules.AttAnswerModule:
+            return module(self.config.hidden_size, input_name, incoming_names, self.apollo_net)
+        else:
+            raise NotImplementedError()
 
     def get_input_module(self):
         return modules.DataModule("Input", self.apollo_net)
 
     def get_support_module(self):
-        return self.module_builder.build_support_module(
-                self.apollo_net, self.config.module_builder)
+        return modules.NullModule()
 
     def get_target_module(self):
         return modules.DataModule("Target", self.apollo_net)
 
     def get_loss_module(self, output_name):
-        return self.module_builder.build_loss_module(
+        return modules.ClassificationLogLossModule(
                 output_name, self.apollo_net)
 
     def get_eval_module(self, output_name):
-        return self.module_builder.build_eval_module(
+        return modules.ClassificationAccuracyModule(
                 output_name, self.apollo_net)
 
     def get_reading_module(self, output_name):
-        return self.module_builder.build_reading_module(
-                output_name, self.apollo_net, self.config.module_builder)
+        return modules.LSTMModule(
+                self.config.hidden_size, output_name, self.apollo_net)

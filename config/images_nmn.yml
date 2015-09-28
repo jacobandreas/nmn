@@ -1,22 +1,17 @@
-corpus:
+task:
   name: images
-  train_size: large
+  train_size: small
+  pad_to_width: 20
+  pad_to_height: 20
 
 model:
   name: nmn
-  include_reading_module: true
-  module_builder:
-    name: images
-    hidden_size: 64
-    embedding_path: data/embeddings/skipdep_lc
+  include_reading_module: false
+  hidden_size: 32
 
 opt:
-  batch_size: 64
-  learning_rate: 0.0001
+  batch_size: 1
+  learning_rate: 0.001
   momentum: 0.9
   clip: 1
-  #epsilon: 0.000001
-  #rho: 0.95
-  #lr: 0.1
-  #clip: 1
-  iters: 1001
+  iters: 10001
