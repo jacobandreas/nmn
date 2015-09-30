@@ -1,17 +1,17 @@
 task:
   name: images
-  train_size: small
+  train_size: large
   pad_to_width: 20
   pad_to_height: 20
 
 model:
   name: nmn
-  include_reading_module: false
-  hidden_size: 32
+  include_reading_module: true
+  hidden_size: 16
 
 opt:
-  batch_size: 1
-  learning_rate: 0.001
+  batch_size: 64
+  learning_rate: 0.01
   momentum: 0.9
   clip: 1
-  iters: 10001
+  iters: 1001

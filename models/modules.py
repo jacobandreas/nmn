@@ -94,15 +94,17 @@ class IndexedConvModule:
         self.input_name = input_name
         self.apollo_net = apollo_net
 
+        self.dropout_name = "IndexedConv__dropout"
         self.indices_name = "IndexedConv__indices"
         self.vector_name = "IndexedConv__vec"
         self.conv1_name = "IndexedConv__conv1"
         self.relu1_name = "IndexedConv__relu1"
-        self.bc_sum_name = "IndexedConv__bc_sum"
+        self.scalar_name = "IndexedConv__scalar"
+        self.flatten_name = "IndexedConv__flatten"
         self.conv2_name = "IndexedConv__conv2" 
         self.relu2_name = "IndexedConv__relu2"
         #self.output_name = self.relu2_name
-        self.output_name = self.bc_sum_name
+        self.output_name = self.flatten_name
 
     @profile
     def forward(self, indices):
@@ -145,8 +147,8 @@ class IndexedConvModule:
             self.vector_name, channels, len(LAYOUT_INDEX),
             bottoms=[self.indices_name]))
 
-        t_width_name = "t_width_%d" % width
-        t_height_name = "t_height_%d" % height
+        #t_width_name = "t_width_%d" % width
+        #t_height_name = "t_height_%d" % height
 
         #self.apollo_net.blobs[self.vector_name].reshape((batch_size, channels, 1, 1))
         #self.apollo_net.f(layers.Tile(
@@ -154,8 +156,17 @@ class IndexedConvModule:
         #self.apollo_net.f(layers.Tile(
         #    t_height_name, bottoms=[t_width_name], axis=3, tiles=height))
 
-        self.apollo_net.f(my_layers.FeatureDot(
-            self.bc_sum_name, bottoms=[self.vector_name, self.input_name]))
+        #self.apollo_net.f(layers.Dropout(self.dropout_name, 0.5,
+        #    bottoms=[self.input_name]))
+
+        #self.apollo_net.f(my_layers.FeatureDot(
+        #    self.bc_sum_name, bottoms=[self.vector_name, self.input_name]))
+        
+        self.apollo_net.f(layers.Scalar(self.scalar_name, 0,
+            bottoms=[self.input_name, self.vector_name]))
+
+        self.apollo_net.f(layers.Convolution(self.flatten_name, (1,1), 1,
+            bottoms=[self.scalar_name]))
 
 class DenseAnswerModule:
     def __init__(self, name, hidden_size, incoming_names, apollo_net):
@@ -202,6 +213,9 @@ class AttAnswerModule:
         self.bias_name = name_prefix + "bias"
         self.ip_layer_name = name_prefix + "ip"
         self.sum_name = name_prefix + "sum"
+
+        self.tile_name = name_prefix + "tile"
+        self.reduction_name = name_prefix + "reduction"
         #self.prediction_layer_name = name_prefix + "pred"
 
         #self.output_name = self.tile_layer_name
@@ -210,8 +224,8 @@ class AttAnswerModule:
     @profile
     def forward(self, indices):
         input_channels = self.apollo_net.blobs[self.input_name].shape[1]
-        batch_size, channels, width, height = self.apollo_net.blobs[self.incoming_names[0]].shape
-        assert channels == 1
+        batch_size, mask_channels, width, height = self.apollo_net.blobs[self.incoming_names[0]].shape
+        assert mask_channels == 1
         flat_shape = (batch_size, width * height)
 
         # TODO(jda) is this evil?
@@ -221,12 +235,26 @@ class AttAnswerModule:
                 self.softmax_layer_name,
                 bottoms=[self.incoming_names[0]]))
 
+        #self.apollo_net.blobs[self.softmax_layer_name].reshape(
+        #        (batch_size, channels, width, height))
         self.apollo_net.blobs[self.softmax_layer_name].reshape(
-                (batch_size, channels, width, height))
+                (batch_size, 1, width, height))
 
-        self.apollo_net.f(my_layers.Attention(
-                self.attention_layer_name,
-                bottoms=[self.softmax_layer_name, self.input_name]))
+        self.apollo_net.f(layers.Tile(
+                self.tile_name, axis=1, tiles=input_channels,
+                bottoms=[self.softmax_layer_name]))
+
+        self.apollo_net.f(layers.Eltwise(
+            self.attention_layer_name, bottoms=[self.tile_name, self.input_name],
+            operation="PROD"))
+
+        self.apollo_net.f(layers.Reduction(
+            self.reduction_name, axis=2, bottoms=[self.attention_layer_name]))
+
+        #self.apollo_net.f(my_layers.Attention(
+        #        self.attention_layer_name,
+        #        bottoms=[self.softmax_layer_name, self.input_name]))
+
 
         self.apollo_net.f(layers.NumpyData(self.indices_name, indices))
 
@@ -236,30 +264,36 @@ class AttAnswerModule:
 
         self.apollo_net.f(layers.InnerProduct(
                 self.ip_layer_name,
-                self.hidden_size,
-                bottoms=[self.attention_layer_name]))
-
-        self.apollo_net.f(layers.ReLU(self.ip_layer_name + "_relu",
-            bottoms=[self.ip_layer_name]))
-
-        self.apollo_net.f(layers.InnerProduct(
-                self.ip_layer_name + "_ip2",
                 len(ANSWER_INDEX),
-                bottoms=[self.ip_layer_name + "_relu"]))
+                bottoms=[self.reduction_name]))
+
+        #self.apollo_net.f(layers.ReLU(self.ip_layer_name + "_relu",
+        #    bottoms=[self.ip_layer_name]))
+
+        #self.apollo_net.f(layers.InnerProduct(
+        #        self.ip_layer_name + "_ip2",
+        #        len(ANSWER_INDEX),
+        #        bottoms=[self.ip_layer_name + "_relu"]))
 
         self.apollo_net.f(layers.Eltwise(
-                #self.sum_name, bottoms=[self.bias_name, self.ip_layer_name],
-                self.sum_name, bottoms=[self.bias_name, self.ip_layer_name + "_ip2"],
+                self.sum_name, bottoms=[self.bias_name, self.ip_layer_name],
                 operation="SUM"))
 
 class DataModule:
-    def __init__(self, name, apollo_net):
+    def __init__(self, name, apollo_net, proj_size=None, dropout=False):
         self.apollo_net = apollo_net
         self.output_name = name
+        self.proj_size = proj_size
+        self.dropout = dropout
 
     @profile
     def forward(self, data):
-        self.apollo_net.f(layers.NumpyData(self.output_name, data=data))
+        if self.dropout:
+            self.apollo_net.f(layers.NumpyData(self.output_name + "_pre", data=data))
+            self.apollo_net.f(layers.Dropout(self.output_name, 0.15,
+                bottoms=[self.output_name + "_pre"]))
+        else:
+            self.apollo_net.f(layers.NumpyData(self.output_name, data=data))
 
 class ClassificationLogLossModule:
     def __init__(self, output_name, apollo_net):
@@ -271,8 +305,7 @@ class ClassificationLogLossModule:
     @profile
     def forward(self, target):
         loss = self.apollo_net.f(layers.SoftmaxWithLoss(
-            self.loss_name, bottoms=[self.output_name, self.target_name],
-            normalize=False))
+            self.loss_name, bottoms=[self.output_name, self.target_name]))
         return loss
 
 class ClassificationAccuracyModule:

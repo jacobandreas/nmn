@@ -166,7 +166,7 @@ class NMNModel:
             raise NotImplementedError()
 
     def get_input_module(self):
-        return modules.DataModule("Input", self.apollo_net)
+        return modules.DataModule("Input", self.apollo_net, dropout=True)
 
     def get_support_module(self):
         return modules.NullModule()

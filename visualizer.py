@@ -16,6 +16,10 @@ class Visualizer:
         self.max_entries = max_entries
         self.next_entry = 0
 
+    def reset(self):
+        self.next_entry = 0
+        self.active = True
+
     def end(self):
         self.active = False
 

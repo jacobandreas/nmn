@@ -77,13 +77,13 @@ class ImageTask:
     def __init__(self, config):
         train_size = \
             {
-                "tiny":  100,
+                "tiny":  10,
                 "small": 1000,
                 "med":   10000,
                 "large": None
             }[config.train_size]
 
-        other_size = None if config.train_size == "large" else 100
+        other_size = None if config.train_size == "large" else train_size
 
         self.train = ImageTaskSet(config, "train", train_size)
         self.val = ImageTaskSet(config, "val", other_size)

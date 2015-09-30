@@ -1,10 +1,13 @@
 #!/usr/bin/env python2
 
-import caffe
 from nmn import NMNModel
 from lstm import LSTMModel
 
-#caffe.set_mode_gpu()
+import apollocaffe
+import caffe
+
+#apollocaffe.set_device(0)
+apollocaffe.set_random_seed(0)
 
 def build_model(config, opt_config):
     if config.name == "nmn":

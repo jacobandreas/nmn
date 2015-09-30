@@ -1,6 +1,7 @@
 #!/usr/bin/env python2
 
 from apollocaffe.layers.layer_headers import Layer, PyLayer
+from apollocaffe import Tensor
 import numpy as np
 
 import theano
@@ -22,6 +23,7 @@ class Accuracy(Layer):
     def __init__(self, name, **kwargs):
         super(Accuracy, self).__init__(self, name, kwargs)
         self.kwargs = kwargs
+        self.pythonargs = []
         self.p.type = "Py"
 
     def setup(self, bttom, top):
@@ -30,7 +32,7 @@ class Accuracy(Layer):
     def forward(self, bottom, top):
         output, target = bottom
         prediction = np.argmax(output.data, axis=1)
-        agreements = np.sum(prediction == target.data)
+        agreements = np.mean(prediction == target.data)
         top[0].data[...] = np.asarray(agreements)
         return agreements
 
@@ -67,6 +69,7 @@ class Attention(Layer):
     def __init__(self, name, **kwargs):
         super(Attention, self).__init__(self, name, kwargs)
         self.kwargs = kwargs
+        self.pythonargs = []
         self.p.type = "Py"
         
     def setup(self, bottom, top):
@@ -149,6 +152,31 @@ class BroadcastSum(Layer):
         small.diff[...] += self.b_small(v)
         big.diff[...] += self.b_big(v)
 
+#class FeatureDot(Layer):
+#    def __init__(self, name, **kwargs):
+#        super(FeatureDot, self).__init__(self, name, kwargs)
+#        self.kwargs = kwargs
+#        self.p.type = "Py"
+#
+#    def setup(self, bottom, top):
+#        pass
+#
+#    def forward(self, bottom, top):
+#        weights, features = bottom
+#        n_batch, n_channels, n_rows, n_cols = features.data_tensor.shape
+#        tmp = Tensor()
+#        tmp.reshape((n_batch, n_channels))
+#        top[0].reshape((n_batch, 1, n_rows, n_cols))
+#        for i_row in range(n_rows):
+#            for i_col in range(n_cols):
+#                tmp.CopyChunkFrom(
+#                top[0].data_tensor[:,0,i_row,i_col] = weights.data_tensor * features.data_tensor[:,:,i_row,i_col]
+#
+#        exit()
+#
+#    def backward(self, top, bottom):
+#        pass
+
 class FeatureDot(Layer):
     def __init__(self, name, **kwargs):
         super(FeatureDot, self).__init__(self, name, kwargs)
@@ -156,21 +184,22 @@ class FeatureDot(Layer):
         self.p.type = "Py"
 
     def setup(self, bottom, top):
-        a = T.tensor4("a")
-        b = T.tensor4("b")
+        weights = T.matrix("weights")
+        weights_bc = weights.dimshuffle((0, 1, "x", "x"))
+        feats = T.tensor4("weights")
         v = T.tensor3("v")
 
-        dot = a * b
+        dot = weights_bc * feats
         result = T.sum(dot, axis=1)
 
-        g_a, g_b = T.Lop(result, [a, b], v)
-        self.f = theano.function([a, b], result)
-        self.b_a = theano.function([a, b, v], g_a)
-        self.b_b = theano.function([a, b, v], g_b)
+        g_w, g_f = T.Lop(result, [weights, feats], v)
+        self.f = theano.function([weights, feats], result)
+        self.b_w = theano.function([weights, feats, v], g_w)
+        self.b_f = theano.function([weights, feats, v], g_f)
 
     def forward(self, bottom, top):
-        a, b = bottom
-        result = self.f(a.data, b.data)
+        weights, feats = bottom
+        result = self.f(weights.data, feats.data)
         nb, nr, nc = result.shape
         result.shape = (nb, 1, nr, nc)
         top[0].reshape(result.shape)
@@ -178,10 +207,34 @@ class FeatureDot(Layer):
         return 0
 
     def backward(self, top, bottom):
-        nb, nf, nr, nc = bottom[0].shape
+        weights, feats = bottom
+        nb, nf, nr, nc = feats.shape
         # TODO why is this necessary?
         top[0].reshape((nb, nr, nc))
-        a, b = bottom
         v = top[0].diff
-        a.diff[...] += self.b_a(a.data, b.data, v)
-        b.diff[...] += self.b_b(a.data, b.data, v)
+        weights.diff[...] += self.b_w(weights.data, feats.data, v)
+        feats.diff[...] += self.b_f(weights.data, feats.data, v)
+
+#class FeatureDot(Layer):
+#    def __init__(self, name, **kwargs):
+#        super(FeatureDot, self).__init__(self, name, kwargs)
+#        self.kwargs = kwargs
+#        self.p.type = "Py"
+#
+#    def setup(self, bottom, top):
+#        pass
+#
+#    def forward(self, bottom, top):
+#        weights, feats = bottom
+#        n_b, n_f, n_r, n_c = feats.shape
+#        work = Tensor()
+#        work.reshape((n_b, n_f))
+#        for r in range(n_r):
+#            for c in range(n_c):
+#                work.copy_chunk_from(feats, n_b * n_f, 
+#                print dir(work)
+#                exit()
+#        return 0
+#
+#    def backward(self, top, bottom):
+#        pass

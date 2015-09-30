@@ -24,6 +24,7 @@ arg_parser.add_argument("-c", "--config", dest="config", required=True,
 arg_parser.add_argument("-l", "--log-config", dest="log_config", 
                         default="config/log.yml", help="log configuration file")
 
+@profile
 def main():
     args = arg_parser.parse_args()
 
@@ -45,14 +46,14 @@ def main():
     for i_iter in range(config.opt.iters):
         do_eval = i_iter % 5 == 0
         np.random.shuffle(train_layout_types)
-        visualizer.begin(100)
         train_loss, train_acc = batched_iter(
                 task.train, model, config, train=True, compute_eval=do_eval,
                 layout_order=train_layout_types)
-        visualizer.end()
         if do_eval:
+            visualizer.begin(100)
             val_loss, val_acc = batched_iter(
                     task.val, model, config, compute_eval=True)
+            visualizer.end()
             test_loss, test_acc = batched_iter(
                     task.test, model, config, compute_eval=True)
             logging.info("%2.4f  %2.4f  %2.4f  :  %2.4f  %2.4f  %2.4f",
@@ -90,7 +91,8 @@ def batched_iter(data, model, config, train=False, compute_eval=False,
             # TODO FIX
             if batch_size < config.opt.batch_size:
                 continue
-            count += batch_size
+            #count += batch_size
+            count += 1
 
             first_input = batch_data[0].load_input()
             batch_input = np.zeros((
