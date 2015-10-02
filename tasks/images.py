@@ -3,7 +3,7 @@
 from datum import Datum, Layout
 from indices import STRING_INDEX, LAYOUT_INDEX, ANSWER_INDEX
 from parse import parse_tree
-from models.modules import AttAnswerModule, IndexedConvModule
+from models.modules import AttAnswerModule, IndexedConvModule, DenseAnswerModule
 
 from collections import defaultdict
 import json
@@ -19,7 +19,8 @@ RAW_IMAGE_FILE = "data/images/Images/%s2014/COCO_%s2014_%012d.jpg"
 
 LEGAL_QUERIES = set([
     #"count", 
-    "color"
+    "color",
+    "is_there"
 ])
 
 def parse_to_layout(parse):
@@ -27,18 +28,23 @@ def parse_to_layout(parse):
     #if parse not in [("color", "cat"), ("color", "shirt")]:
     #    return None
 
-    if not isinstance(parse, tuple):
-        return None
-    if parse[0] not in LEGAL_QUERIES:
-        return None
-    if isinstance(parse[1], tuple):
-        return None
+    #if not isinstance(parse, tuple):
+    #    return None
+    #if parse[0] not in LEGAL_QUERIES:
+    #    return None
+    #if isinstance(parse[1], tuple):
+    #    return None
 
     layout_modules = [None, None]
     layout_indices = [None, None]
 
-    if parse[0] == "color":
+    if parse[0] in ("is", "is_there", "count"):
+        layout_modules[0] = DenseAnswerModule
+    else:
         layout_modules[0] = AttAnswerModule
+    #else:
+    #    print parse
+    #    exit()
     #elif parse[0] == "count":
     #    layout_modules[0] = DenseAnswerModule
     layout_indices[0] = LAYOUT_INDEX.index(parse[0])
@@ -59,11 +65,16 @@ class ImageDatum(Datum):
         self.input_id = input_id
         self.outputs = outputs
 
+        self.input_path = IMAGE_FILE % (self.input_set, self.input_set, self.input_id)
         self.image_path = RAW_IMAGE_FILE % (self.input_set, self.input_set, self.input_id)
 
+        if not os.path.exists(self.input_path):
+            raise IOError("No such processed image: " + self.input_path)
+        if not os.path.exists(self.input_path):
+            raise IOError("No such source image: " + self.image_paht)
+
     def load_input(self):
-        filename = IMAGE_FILE % (self.input_set, self.input_set, self.input_id)
-        with np.load(filename) as zdata:
+        with np.load(self.input_path) as zdata:
             assert len(zdata.keys()) == 1
             image_data = zdata[zdata.keys()[0]]
         return image_data
@@ -123,8 +134,12 @@ class ImageTaskSet:
                     continue
                 image_id = question["image_id"]
                 #if os.path.exists(IMAGE_FILE % (set_name, set_name, image_id)):
-                datum = ImageDatum( id, indexed_question, layout, set_name, image_id, [])
-                data_by_id[id] = datum
+                try:
+                    datum = ImageDatum( id, indexed_question, layout, set_name, image_id, [])
+                    data_by_id[id] = datum
+                except IOError as e:
+                    pass
+                    
 
         with open(ANN_FILE % set_name) as ann_f:
             annotations = json.load(ann_f)["annotations"]

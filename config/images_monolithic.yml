@@ -5,8 +5,7 @@ task:
   pad_to_height: 20
 
 model:
-  name: nmn
-  include_reading_module: false
+  name: monolithic
   hidden_size: 16
 
 opt:

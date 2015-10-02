@@ -108,16 +108,17 @@ def batched_iter(data, model, config, train=False, compute_eval=False,
             loss, acc = model.forward(
                     layout_type, batch_indices, batch_input, batch_output, compute_eval)
 
-            att_blob = model.apollo_net.blobs["AttAnswer__softmax"].data[0,0,...]
-            att_blob = att_blob[:first_input.shape[1], :first_input.shape[2]]
+            #att_blob = model.apollo_net.blobs["AttAnswer__softmax"].data[0,0,...]
+            att_blob = model.apollo_net.blobs["IndexedConv__flatten"].data.reshape((64, 1, 20, 20))
+            att_blob = att_blob[0, 0, :first_input.shape[1], :first_input.shape[2]]
             visualizer.show([
                 " ".join([STRING_INDEX.get(w) for w in batch_data[0].string]),
                 "<img src='../%s' />" % batch_data[0].image_path,
                 att_blob,
-                first_input[0,...],
+                #first_input[0,...],
                 #first_input.shape[1],
                 #first_input.shape[2], 
-                ANSWER_INDEX.get(np.argmax(model.apollo_net.blobs["AttAnswer__sum"].data[0,...])),
+                ANSWER_INDEX.get(np.argmax(model.apollo_net.blobs[model.answer_layer].data[0,...])),
                 ANSWER_INDEX.get(batch_output[0])
             ])
 

@@ -36,6 +36,7 @@ class ModuleNetwork:
         self.target_module = model.get_target_module()
         self.loss_module = model.get_loss_module(output_name)
         self.eval_module = model.get_eval_module(output_name)
+        self.answer_layer = output_name
 
     def wire(self, modules, query, model):
         if not isinstance(query, tuple):
@@ -95,6 +96,7 @@ class NMNModel:
         self.current_net = self.get_net(layout_type)
         lin_indices = []
         linearize(lin_indices, indices)
+        self.answer_layer = self.current_net.answer_layer
         return self.current_net.forward(lin_indices, input, target, compute_eval)
 
     def train(self):
@@ -162,6 +164,8 @@ class NMNModel:
             return module(self.config.hidden_size, input_name, self.apollo_net)
         elif module == modules.AttAnswerModule:
             return module(self.config.hidden_size, input_name, incoming_names, self.apollo_net)
+        elif module == modules.DenseAnswerModule:
+            return module(self.config.hidden_size, incoming_names, self.apollo_net)
         else:
             raise NotImplementedError()
 

@@ -1,6 +1,6 @@
 task:
-  name: images
-  train_size: large
+  name: daquar
+  train_size: reduced
   pad_to_width: 20
   pad_to_height: 20
 

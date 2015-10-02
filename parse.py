@@ -3,6 +3,8 @@
 import sexpdata
 
 def parse_tree(p):
+    if "'" in p:
+        p = "none"
     parsed = sexpdata.loads(p)
     extracted = extract_parse(parsed)
     return extracted

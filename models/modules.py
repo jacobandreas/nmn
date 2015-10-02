@@ -98,7 +98,7 @@ class IndexedConvModule:
         self.indices_name = "IndexedConv__indices"
         self.vector_name = "IndexedConv__vec"
         self.conv1_name = "IndexedConv__conv1"
-        self.relu1_name = "IndexedConv__relu1"
+        #self.relu1_name = "IndexedConv__relu1"
         self.scalar_name = "IndexedConv__scalar"
         self.flatten_name = "IndexedConv__flatten"
         self.conv2_name = "IndexedConv__conv2" 
@@ -169,14 +169,13 @@ class IndexedConvModule:
             bottoms=[self.scalar_name]))
 
 class DenseAnswerModule:
-    def __init__(self, name, hidden_size, incoming_names, apollo_net):
-        self.name = name
+    def __init__(self, hidden_size, incoming_names, apollo_net):
         self.hidden_size = hidden_size
         assert len(incoming_names) == 1
         self.incoming_name = incoming_names[0]
         self.apollo_net = apollo_net
 
-        name_prefix = "DenseAnswer_%s__" % name
+        name_prefix = "DenseAnswer__"
         self.conv1_name = name_prefix + "conv1"
         self.relu1_name = name_prefix + "relu1"
         #self.conv2_name = name_prefix + "conv2"
@@ -187,14 +186,14 @@ class DenseAnswerModule:
         self.output_name = self.ip_name
 
     @profile
-    def forward(self):
-        self.apollo_net.f(layers.Convolution(
-            self.conv1_name, (5, 5), 1, bottoms=[self.incoming_name]))
-        self.apollo_net.f(layers.ReLU(self.relu1_name, bottoms=[self.conv1_name]))
-        self.apollo_net.f(my_layers.Collapse(
-            self.collapse_name, bottoms=[self.relu1_name]))
+    def forward(self, indices):
+        #self.apollo_net.f(layers.Convolution(
+        #    self.conv1_name, (5, 5), 1, bottoms=[self.incoming_name]))
+        #self.apollo_net.f(layers.ReLU(self.relu1_name, bottoms=[self.conv1_name]))
+        #self.apollo_net.f(my_layers.Collapse(
+        #    self.collapse_name, bottoms=[self.relu1_name]))
         self.apollo_net.f(layers.InnerProduct(
-            self.ip_name, len(ANSWER_INDEX), bottoms=[self.collapse_name]))
+            self.ip_name, len(ANSWER_INDEX), bottoms=[self.incoming_name]))
 
 class AttAnswerModule:
     def __init__(self, hidden_size, input_name, incoming_names, apollo_net):
@@ -250,6 +249,19 @@ class AttAnswerModule:
 
         self.apollo_net.f(layers.Reduction(
             self.reduction_name, axis=2, bottoms=[self.attention_layer_name]))
+        #self.apollo_net.blobs[self.attention_layer_name].reshape((batch_size,
+        #    input_channels, width * height))
+        #self.apollo_net.f(layers.InnerProduct(
+        #    self.reduction_name, 1, 
+        #    axis=2, 
+        #    bottoms=[self.attention_layer_name]))
+        #    #weight_filler=layers.Filler("constant", 1),
+        #    #bias_filler=layers.Filler("constant", 0)))
+        #self.apollo_net.blobs[self.reduction_name].reshape((batch_size, input_channels))
+
+        #print self.apollo_net.blobs[self.attention_layer_name].shape
+        #print self.apollo_net.blobs[self.reduction_name].shape
+        #exit()
 
         #self.apollo_net.f(my_layers.Attention(
         #        self.attention_layer_name,
