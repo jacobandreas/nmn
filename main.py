@@ -4,7 +4,7 @@
 if not isinstance(__builtins__, dict) or "profile" not in __builtins__:
     __builtins__.__dict__["profile"] = lambda x: x
 
-from indices import STRING_INDEX, ANSWER_INDEX
+from indices import STRING_INDEX, ANSWER_INDEX, NULL
 import models
 import tasks
 import util
@@ -27,9 +27,9 @@ arg_parser.add_argument("-l", "--log-config", dest="log_config",
 @profile
 def main():
     args = arg_parser.parse_args()
+    config_name = args.config.split("/")[-1].split(".")[0]
 
     with open(args.log_config) as log_config_f:
-        config_name = args.config.split("/")[-1].split(".")[0]
         log_filename = "%s.log" % config_name
         log_config = yaml.load(log_config_f)
         log_config["handlers"]["fileHandler"]["filename"] = log_filename
@@ -41,23 +41,20 @@ def main():
     task = tasks.load_task(config.task)
     model = models.build_model(config.model, config.opt)
 
-    train_layout_types = list(task.train.layout_types)
-
     for i_iter in range(config.opt.iters):
         do_eval = i_iter % 5 == 0
-        np.random.shuffle(train_layout_types)
         train_loss, train_acc = batched_iter(
-                task.train, model, config, train=True, compute_eval=do_eval,
-                layout_order=train_layout_types)
+                task.train, model, config, train=True, compute_eval=do_eval)
         if do_eval:
-            visualizer.begin(100)
             val_loss, val_acc = batched_iter(
                     task.val, model, config, compute_eval=True)
-            visualizer.end()
+            visualizer.begin(100)
             test_loss, test_acc = batched_iter(
                     task.test, model, config, compute_eval=True)
+            visualizer.end()
             logging.info("%2.4f  %2.4f  %2.4f  :  %2.4f  %2.4f  %2.4f",
                     train_loss, val_loss, test_loss, train_acc, val_acc, test_acc)
+            model.save("saves/%s_%d.h5" % (config_name, i_iter))
         else:
             logging.info("%2.4f", train_loss)
 
@@ -73,20 +70,23 @@ def stack_indices(indices):
         return indices
 
 
-def batched_iter(data, model, config, train=False, compute_eval=False, 
-                 layout_order=None):
+def batched_iter(data, model, config, train=False, compute_eval=False):
     batch_loss = 0.
     batch_acc = 0.
     count = 0
-    if layout_order is not None:
-        layout_types = layout_order
-    else:
-        layout_types = data.layout_types
 
-    for layout_type in layout_types:
-        layout_data = data.by_layout_type[layout_type]
-        for batch_start in range(0, len(layout_data), config.opt.batch_size):
-            batch_data = layout_data[batch_start:batch_start+config.opt.batch_size]
+    if config.opt.batch_by == "layout":
+        grouped_data = data.by_layout_type
+    elif config.opt.batch_by == "length":
+        grouped_data = data.by_string_length
+    elif config.opt.batch_by == "both":
+        grouped_data = data.by_layout_and_length
+    keys = grouped_data.keys()
+
+    for key in keys:
+        key_data = grouped_data[key]
+        for batch_start in range(0, len(key_data), config.opt.batch_size):
+            batch_data = key_data[batch_start:batch_start+config.opt.batch_size]
             batch_size = len(batch_data)
             # TODO FIX
             if batch_size < config.opt.batch_size:
@@ -103,18 +103,30 @@ def batched_iter(data, model, config, train=False, compute_eval=False,
                 channels, width, height = datum_input.shape
                 batch_input[i,:,:width,:height] = datum_input
             batch_output = np.asarray([d.outputs[0] for d in batch_data])
-            batch_indices = stack_indices([d.layout.indices for d in batch_data])
+
+            batch_indices = None
+            layout_type = None
+            strings = None
+            if config.opt.batch_by in ("layout", "both"):
+                batch_indices = stack_indices([d.layout.indices for d in batch_data])
+                layout_type = key if config.opt.batch_by == "layout" else key[0]
+
+            max_string_len = max(len(d.string) for d in batch_data)
+            min_string_len = min(len(d.string) for d in batch_data)
+            strings = [[STRING_INDEX[NULL]] * (max_string_len - len(d.string)) + d.string for d in batch_data]
+            strings = np.asarray(strings)
             
             loss, acc = model.forward(
-                    layout_type, batch_indices, batch_input, batch_output, compute_eval)
+                    layout_type, batch_indices, strings, batch_input, 
+                    batch_output, compute_eval)
 
             #att_blob = model.apollo_net.blobs["AttAnswer__softmax"].data[0,0,...]
-            att_blob = model.apollo_net.blobs["IndexedConv__flatten"].data.reshape((64, 1, 20, 20))
-            att_blob = att_blob[0, 0, :first_input.shape[1], :first_input.shape[2]]
+            #att_blob = model.apollo_net.blobs["IndexedConv__flatten"].data.reshape((64, 1, 20, 20))
+            #att_blob = att_blob[0, 0, :first_input.shape[1], :first_input.shape[2]]
             visualizer.show([
                 " ".join([STRING_INDEX.get(w) for w in batch_data[0].string]),
                 "<img src='../%s' />" % batch_data[0].image_path,
-                att_blob,
+                #att_blob,
                 #first_input[0,...],
                 #first_input.shape[1],
                 #first_input.shape[2], 

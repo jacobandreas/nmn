@@ -3,7 +3,7 @@
 from datum import Datum, Layout
 from indices import STRING_INDEX, LAYOUT_INDEX, ANSWER_INDEX
 from parse import parse_tree
-from models.modules import AttAnswerModule, IndexedConvModule, DenseAnswerModule
+from models.modules import AttAnswerModule, DetectModule, DenseAnswerModule
 
 from collections import defaultdict
 import json
@@ -49,7 +49,7 @@ def parse_to_layout(parse):
     #    layout_modules[0] = DenseAnswerModule
     layout_indices[0] = LAYOUT_INDEX.index(parse[0])
 
-    layout_modules[1] = IndexedConvModule
+    layout_modules[1] = DetectModule
     layout_indices[1] = LAYOUT_INDEX.index(parse[1])
 
     layout = Layout(tuple(layout_modules), tuple(layout_indices))

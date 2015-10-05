@@ -9,6 +9,8 @@ import itertools
 import importlib
 import numpy as np
 
+import h5py
+
 # TODO consolidate with wire()
 def linearize(lin, indices):
     if isinstance(indices, tuple):
@@ -27,6 +29,7 @@ class ModuleNetwork:
         self.wire(self.modules, query, model)
 
         output_name = self.modules[-1].output_name
+        #output_name = None
         if include_reading_module:
             self.reading_module = model.get_reading_module(output_name)
             output_name = self.reading_module.output_name
@@ -40,8 +43,9 @@ class ModuleNetwork:
 
     def wire(self, modules, query, model):
         if not isinstance(query, tuple):
+            position = len(modules)
             module = model.get_module(
-                    query, 0, self.input_module.output_name, [])
+                position, query, 0, self.input_module.output_name, [])
             modules.append(module)
         else:
             head = query[0]
@@ -51,15 +55,15 @@ class ModuleNetwork:
             children = [self.wire(modules, tail_query, model) 
                         for tail_query in tail]
 
-            module = model.get_module(query[0], 
-                                      arity,
-                                      self.input_module.output_name,
-                                      children)
+            position = len(modules)
+            module = model.get_module(
+                position, query[0], arity, self.input_module.output_name,
+                children)
             modules.append(module)
 
         return module.output_name
 
-    def forward(self, indices, input, target, compute_eval):
+    def forward(self, indices, string, input, target, compute_eval):
         self.input_module.forward(input)
         self.support_module.forward()
 
@@ -67,7 +71,7 @@ class ModuleNetwork:
             module.forward(mod_indices)
 
         if self.reading_module is not None:
-            self.reading_module.forward(indices)
+            self.reading_module.forward(string)
 
         self.target_module.forward(target)
         loss = self.loss_module.forward(target)
@@ -90,14 +94,27 @@ class NMNModel:
         self.sq_grads = dict()
         self.sq_updates = dict()
 
-    def forward(self, layout_type, indices, input, target, compute_eval=False):
+        self.loaded_lstm = False
+
+    def forward(self, layout_type, indices, string, input, target, compute_eval=False):
         assert self.current_net is None
         self.apollo_net.clear_forward()
         self.current_net = self.get_net(layout_type)
         lin_indices = []
         linearize(lin_indices, indices)
         self.answer_layer = self.current_net.answer_layer
-        return self.current_net.forward(lin_indices, input, target, compute_eval)
+        r = self.current_net.forward(lin_indices, string, input, target, compute_eval)
+        if not self.loaded_lstm and hasattr(self.config, "load_lstm"):
+            self.apollo_net.load(self.config.load_lstm)
+            self.apollo_net.clear_forward()
+            r = self.current_net.forward(lin_indices, string, input, target, compute_eval)
+            self.loaded_lstm = True
+            with h5py.File(self.config.load_lstm) as f:
+                names = []
+                f.visit(names.append)
+                print names
+            print self.apollo_net.params.keys()
+        return r
 
     def train(self):
         assert self.current_net is not None
@@ -105,6 +122,9 @@ class NMNModel:
         self.apollo_net.update(lr=self.opt_config.learning_rate,
                                momentum=self.opt_config.momentum,
                                clip_gradients=self.opt_config.clip)
+
+    def save(self, dest):
+        pass
 
     def update(self):
         rho = self.opt_config.rho
@@ -158,19 +178,33 @@ class NMNModel:
             self.nets[query] = net
         return self.nets[query]
 
-    def get_module(self, module, arity, input_name, incoming_names):
-        if module == modules.IndexedConvModule:
+    def get_module(self, position, module, arity, input_name, incoming_names):
+        if module == modules.DetectModule:
             assert len(incoming_names) == 0
-            return module(self.config.hidden_size, input_name, self.apollo_net)
+            return module(
+                position, self.config.hidden_size, input_name, self.apollo_net)
         elif module == modules.AttAnswerModule:
-            return module(self.config.hidden_size, input_name, incoming_names, self.apollo_net)
+            return module(
+                position, self.config.hidden_size, input_name, incoming_names, self.apollo_net)
         elif module == modules.DenseAnswerModule:
-            return module(self.config.hidden_size, incoming_names, self.apollo_net)
+            return module(
+                position, self.config.hidden_size, incoming_names, self.apollo_net)
+        elif module == modules.ConjModule:
+            return module(
+                position, incoming_names, self.apollo_net)
+        elif module == modules.RedetectModule:
+            assert len(incoming_names) == 1
+            return module(
+                position, incoming_names[0], self.apollo_net)
         else:
-            raise NotImplementedError()
+            raise NotImplementedError("Don't know how to make a %s" % module.__class__.__name__)
 
     def get_input_module(self):
-        return modules.DataModule("Input", self.apollo_net, dropout=True)
+        if hasattr(self.config, "image_features"):
+            return modules.DataModule(
+                "Input", self.apollo_net, proj_size=self.config.image_features)
+        else:
+            return modules.DataModule("Input", self.apollo_net)
 
     def get_support_module(self):
         return modules.NullModule()

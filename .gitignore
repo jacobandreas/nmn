@@ -6,3 +6,5 @@ _old
 weights*
 *.lprof
 vis
+saves
+logs

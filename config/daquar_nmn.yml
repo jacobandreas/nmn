@@ -1,17 +1,20 @@
 task:
   name: daquar
   train_size: reduced
-  pad_to_width: 20
-  pad_to_height: 20
+  pad_to_width: 14
+  pad_to_height: 18
 
 model:
   name: nmn
-  include_reading_module: false
-  hidden_size: 16
+  include_reading_module: true
+  image_features: 1
+  hidden_size: 500
+  load_lstm: "saves/daquar_lstm_135.h5"
 
 opt:
   batch_size: 64
-  learning_rate: 0.01
+  batch_by: layout
+  learning_rate: 0.001
   momentum: 0.9
-  clip: 1
+  clip: 10
   iters: 1001

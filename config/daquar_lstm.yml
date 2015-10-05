@@ -1,0 +1,19 @@
+task:
+  name: daquar
+  train_size: full
+  pad_to_width: 14
+  pad_to_height: 18
+
+model:
+  name: lstm
+  hidden_size: 500
+  image_before: false
+  image_after: false
+
+opt:
+  batch_size: 64
+  batch_by: length
+  learning_rate: 0.01
+  momentum: 0.9
+  clip: 10
+  iters: 1001

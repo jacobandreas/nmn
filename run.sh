@@ -9,4 +9,4 @@ export PYTHONPATH=$PYTHONPATH:$APOLLO_ROOT/python:$APOLLO_ROOT/python/caffe/prot
 #kernprof -l bug.py
 #python simple.py
 
-python main.py -c config/daquar_nmn.yml
+python main.py -c config/cocoqa_lstm.yml
