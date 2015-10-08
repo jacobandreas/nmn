@@ -18,6 +18,8 @@ import logging.config
 import numpy as np
 import yaml
 
+KBEST=5
+
 arg_parser = argparse.ArgumentParser()
 arg_parser.add_argument("-c", "--config", dest="config", required=True,
                         help="model configuration file")
@@ -30,7 +32,7 @@ def main():
     config_name = args.config.split("/")[-1].split(".")[0]
 
     with open(args.log_config) as log_config_f:
-        log_filename = "%s.log" % config_name
+        log_filename = "logs/%s.log" % config_name
         log_config = yaml.load(log_config_f)
         log_config["handlers"]["fileHandler"]["filename"] = log_filename
         logging.config.dictConfig(log_config)
@@ -48,15 +50,17 @@ def main():
         if do_eval:
             val_loss, val_acc = batched_iter(
                     task.val, model, config, compute_eval=True)
-            visualizer.begin(100)
+            visualizer.begin(config_name, 100)
             test_loss, test_acc = batched_iter(
                     task.test, model, config, compute_eval=True)
             visualizer.end()
-            logging.info("%2.4f  %2.4f  %2.4f  :  %2.4f  %2.4f  %2.4f",
-                    train_loss, val_loss, test_loss, train_acc, val_acc, test_acc)
-            model.save("saves/%s_%d.h5" % (config_name, i_iter))
+            logging.info("%5d  :  %2.4f  %2.4f  %2.4f  :  %2.4f  %2.4f  %2.4f",
+                    i_iter, train_loss, val_loss, test_loss, train_acc, val_acc, 
+                    test_acc)
+            model.save("saves/%s_%d.caffemodel" % (config_name, i_iter))
         else:
-            logging.info("%2.4f", train_loss)
+            logging.info("%5d  :  %2.4f", i_iter, train_loss)
+        exit()
 
 
 
@@ -81,10 +85,12 @@ def batched_iter(data, model, config, train=False, compute_eval=False):
         grouped_data = data.by_string_length
     elif config.opt.batch_by == "both":
         grouped_data = data.by_layout_and_length
-    keys = grouped_data.keys()
+    keys = list(grouped_data.keys())
+    np.random.shuffle(keys)
 
     for key in keys:
-        key_data = grouped_data[key]
+        key_data = list(grouped_data[key])
+        np.random.shuffle(key_data)
         for batch_start in range(0, len(key_data), config.opt.batch_size):
             batch_data = key_data[batch_start:batch_start+config.opt.batch_size]
             batch_size = len(batch_data)
@@ -120,19 +126,17 @@ def batched_iter(data, model, config, train=False, compute_eval=False):
                     layout_type, batch_indices, strings, batch_input, 
                     batch_output, compute_eval)
 
-            #att_blob = model.apollo_net.blobs["AttAnswer__softmax"].data[0,0,...]
-            #att_blob = model.apollo_net.blobs["IndexedConv__flatten"].data.reshape((64, 1, 20, 20))
-            #att_blob = att_blob[0, 0, :first_input.shape[1], :first_input.shape[2]]
-            visualizer.show([
-                " ".join([STRING_INDEX.get(w) for w in batch_data[0].string]),
-                "<img src='../%s' />" % batch_data[0].image_path,
-                #att_blob,
-                #first_input[0,...],
-                #first_input.shape[1],
-                #first_input.shape[2], 
-                ANSWER_INDEX.get(np.argmax(model.apollo_net.blobs[model.answer_layer].data[0,...])),
-                ANSWER_INDEX.get(batch_output[0])
-            ])
+            #with open("preds_%s.txt" % train, "a") as rerank_f:
+            #    for i in range(len(batch_datum))
+            #        print >>rerank_f, " ".join([STRING_INDEX.get(w) for w in batch_data[i].string[1:-1]]),
+            #        print >>rerank_f, ANSWER_INDEX.get(datum.outputs[i]),
+
+            #        preds = np.argsort(-model.apollo_net.blobs[model.answer_layer].data[i,...])
+            #        pweights = -np.sort(-model.apollo_net.blobs[model.answer_layer].data[i,...])
+            #        for k in range(KBEST):
+            #            print >>rerank_f, ANSWER_INDEX.get(preds[k]), pweights[k],
+
+            vis(model, batch_data, batch_output, first_input)
 
             batch_loss += loss
             if compute_eval:
@@ -161,6 +165,27 @@ def simple_iter(data, model, train=False, compute_eval=False):
         model.clear()
     return batch_loss / len(data), batch_acc / len(data)
 
+def vis(model, batch_data, batch_output, first_input):
+    fields = []
+    fields.append(batch_data[0].raw_query)
+    fields.append(" ".join([STRING_INDEX.get(w) for w in batch_data[0].string[1:-1]]))
+    fields.append("<img src='../../%s' />" % batch_data[0].image_path)
+
+    if hasattr(model, "apollo_net") and hasattr(model, "attention_layer"):
+        att_data = model.apollo_net \
+                        .blobs[model.attention_layer] \
+                        .data[0] \
+                        .reshape((20, 20))[:first_input.shape[1], 
+                                           :first_input.shape[2]]
+        fields.append(att_data)
+
+    if hasattr(model, "apollo_net") and hasattr(model, "answer_layer"):
+        preds = np.argsort(-model.apollo_net.blobs[model.answer_layer].data[0,...])
+        predstrs = ", ".join([ANSWER_INDEX.get(p) for p in preds[:KBEST]]),
+        fields.append(predstrs)
+
+    fields.append(ANSWER_INDEX.get(batch_output[0]))
+    visualizer.show(fields)
 
 if __name__ == "__main__":
     main()

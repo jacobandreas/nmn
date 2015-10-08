@@ -10,6 +10,7 @@ from models.modules import \
 from collections import defaultdict
 import logging
 import numpy as np
+import os
 
 STRING_FILE = "data/cocoqa/%s/questions.txt"
 PARSE_FILE = "data/cocoqa/%s/questions.sp"
@@ -53,6 +54,11 @@ class CocoQADatum(Datum):
         self.input_path = IMAGE_FILE % (coco_set_name, coco_set_name, image_id)
         self.image_path = RAW_IMAGE_FILE % (coco_set_name, coco_set_name, image_id)
 
+        if not os.path.exists(self.input_path):
+            raise IOError("No such processed image: " + self.input_path)
+        if not os.path.exists(self.input_path):
+            raise IOError("No such source image: " + self.image_paht)
+
     def load_input(self):
         with np.load(self.input_path) as zdata:
             assert len(zdata.keys()) == 1
@@ -89,9 +95,9 @@ class CocoQATaskSet:
              open(IMAGE_ID_FILE % set_name) as image_id_f:
 
             i = 0
-            for question, parse_str, answer, image_id in zip(question_f, parse_f, ann_f, image_id_f):
-
-                #if i > 30000:
+            for question, parse_str, answer, image_id in \
+                    zip(question_f, parse_f, ann_f, image_id_f):
+                #if i > 300:
                 #    break
                 i += 1
             
@@ -105,18 +111,24 @@ class CocoQATaskSet:
                 answer = ANSWER_INDEX.index(answer)
                 words = [STRING_INDEX.index(w) for w in words]
                 parse = parse_tree(parse_str)
+                if len(parse) == 1:
+                    parse = parse + ("object",)
+                #print parse
                 layout = parse_to_layout(parse)
 
-                if parse[0] != "color":
+                if parse[0] != "what":
                     continue
 
                 coco_set_name = "train" if set_name == "train" else "val"
-                datum = CocoQADatum(words, layout, image_id, answer, coco_set_name)
-
-                data.add(datum)
-                data_by_layout_type[datum.layout.modules].append(datum)
-                data_by_string_length[len(datum.string)].append(datum)
-                data_by_layout_and_length[(datum.layout.modules, len(datum.string))].append(datum)
+                try:
+                    datum = CocoQADatum(words, layout, image_id, answer, coco_set_name)
+                    datum.raw_query = parse_str
+                    data.add(datum)
+                    data_by_layout_type[datum.layout.modules].append(datum)
+                    data_by_string_length[len(datum.string)].append(datum)
+                    data_by_layout_and_length[(datum.layout.modules, len(datum.string))].append(datum)
+                except IOError as e:
+                    pass
 
         self.data = data
         self.by_layout_type = data_by_layout_type

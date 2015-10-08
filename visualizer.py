@@ -10,11 +10,15 @@ class Visualizer:
     def __init__(self):
         self.active = False
 
-    def begin(self, max_entries):
+    def begin(self, dest, max_entries):
         self.lines = []
         self.active = True
         self.max_entries = max_entries
         self.next_entry = 0
+
+        self.dest_dir = os.path.join(VIS_DIR, dest)
+        if not os.path.exists(self.dest_dir):
+            os.mkdir(self.dest_dir)
 
     def reset(self):
         self.next_entry = 0
@@ -23,10 +27,10 @@ class Visualizer:
     def end(self):
         self.active = False
 
-        with open(os.path.join(VIS_DIR, "index.html"), "w") as vis_file:
+        with open(os.path.join(self.dest_dir, "index.html"), "w") as vis_file:
             #print >>vis_file, "<html><head><link rel='stylesheet' href='style.css'></head><body><table>"
             print >>vis_file, "<html><head>"
-            print >>vis_file, "<link rel='stylesheet' href='style.css' />"
+            print >>vis_file, "<link rel='stylesheet' href='../style.css' />"
             print >>vis_file, "</head><body><table>"
             for line in self.lines:
                 print >>vis_file, "  <tr>"
@@ -44,7 +48,7 @@ class Visualizer:
         for i_field, field in enumerate(data):
             if isinstance(field, np.ndarray):
                 filename = "%d_%d.jpg" % (self.next_entry, i_field)
-                filepath = os.path.join(VIS_DIR, filename)
+                filepath = os.path.join(self.dest_dir, filename)
                 scipy.misc.imsave(filepath, field)
                 table_data.append("<img src='%s' />" % filename)
             else:

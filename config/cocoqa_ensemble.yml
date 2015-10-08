@@ -1,0 +1,25 @@
+task:
+  name: cocoqa
+  pad_to_width: 20
+  pad_to_height: 20
+
+model:
+  name: ensemble
+  models:
+    - 
+      config: config/cocoqa_nmn_alt.yml
+      weights: saves/cocoqa_nmn_alt_15.caffemodel
+    - 
+      config: config/cocoqa_lstm.yml
+      weights: saves/cocoqa_lstm_10.caffemodel
+
+  train_submodels: true
+
+
+opt:
+  batch_size: 64
+  batch_by: layout
+  learning_rate: 0.001
+  momentum: 0.9
+  clip: 10
+  iters: 1001

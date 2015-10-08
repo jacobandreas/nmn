@@ -158,5 +158,8 @@ class LSTMModel:
     def clear(self):
         pass
 
-    def save(self, name):
-        self.apollo_net.save(name)
+    def save(self, dest):
+        self.apollo_net.save(dest)
+
+    def load(self, src):
+        self.apollo_net.load(src)

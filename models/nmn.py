@@ -40,6 +40,7 @@ class ModuleNetwork:
         self.loss_module = model.get_loss_module(output_name)
         self.eval_module = model.get_eval_module(output_name)
         self.answer_layer = output_name
+        self.attention_layer = self.modules[0].output_name
 
     def wire(self, modules, query, model):
         if not isinstance(query, tuple):
@@ -94,7 +95,8 @@ class NMNModel:
         self.sq_grads = dict()
         self.sq_updates = dict()
 
-        self.loaded_lstm = False
+        if hasattr(config, "load_lstm"):
+            self.apollo_net.load(self.config.load_lstm)
 
     def forward(self, layout_type, indices, string, input, target, compute_eval=False):
         assert self.current_net is None
@@ -103,18 +105,19 @@ class NMNModel:
         lin_indices = []
         linearize(lin_indices, indices)
         self.answer_layer = self.current_net.answer_layer
-        r = self.current_net.forward(lin_indices, string, input, target, compute_eval)
-        if not self.loaded_lstm and hasattr(self.config, "load_lstm"):
-            self.apollo_net.load(self.config.load_lstm)
-            self.apollo_net.clear_forward()
-            r = self.current_net.forward(lin_indices, string, input, target, compute_eval)
-            self.loaded_lstm = True
-            with h5py.File(self.config.load_lstm) as f:
-                names = []
-                f.visit(names.append)
-                print names
-            print self.apollo_net.params.keys()
-        return r
+        self.attention_layer = self.current_net.attention_layer
+        return self.current_net.forward(lin_indices, string, input, target, compute_eval)
+        #if not self.loaded_lstm and hasattr(self.config, "load_lstm"):
+        #    self.apollo_net.load(self.config.load_lstm)
+        #    self.apollo_net.clear_forward()
+        #    r = self.current_net.forward(lin_indices, string, input, target, compute_eval)
+        #    self.loaded_lstm = True
+        #    with h5py.File(self.config.load_lstm) as f:
+        #        names = []
+        #        f.visit(names.append)
+        #        print names
+        #    print self.apollo_net.params.keys()
+        #return r
 
     def train(self):
         assert self.current_net is not None
@@ -124,7 +127,10 @@ class NMNModel:
                                clip_gradients=self.opt_config.clip)
 
     def save(self, dest):
-        pass
+        self.apollo_net.save(dest)
+
+    def load(self, src):
+        self.apollo_net.load(src)
 
     def update(self):
         rho = self.opt_config.rho

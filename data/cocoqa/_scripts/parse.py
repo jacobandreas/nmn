@@ -32,14 +32,13 @@ def fuse_chunks(chunks):
     current_type = None
     current_words = []
     for chunk_type, words in chunks:
-        if chunk_type == "VP":
-            continue
+        #print ">", chunk_type
+        if chunk_type == "VP" or chunk_type is None:
             word = words[-1]
             if word in ("is", "are", "have", "do", "be", "can", "will", "did",
-                        "were", "was", "had"):
+                        "were", "was", "had", "does"):
                 continue
-            print word
-            buf.append((current_type, [word]))
+            current_words += [word]
         elif chunk_type == "PP" and words[0] != "of":
             buf.append((current_type, current_words))
             current_type = "PP"
@@ -138,15 +137,12 @@ def proc_body(chunk):
             return (joined[0], joined[-1])
 
 def parse(line):
-    print
-    print line
+    #print line
     words = line.split()
     chunks = get_chunks(words)
     fchunks = fuse_chunks(chunks)
     question, preds1 = proc_head(fchunks[0][1])
     preds2 = [proc_body(c[1]) for c in fchunks[1:-1] if c[1] != []]
-    print fchunks[1:-1]
-    print preds2
 
     parse = [question]
     if preds1 is not None:

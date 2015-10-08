@@ -4,6 +4,13 @@ class Struct:
     for k, v in entries.items():
       if isinstance(v, dict):
         rv = Struct(**v)
+      elif isinstance(v, list):
+        rv = []
+        for item in v:
+          if isinstance(item, dict):
+            rv.append(Struct(**item))
+          else:
+            rv.append(item)
       else:
         rv = v
       rec_entries[k] = rv
