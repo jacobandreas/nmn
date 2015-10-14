@@ -7,6 +7,7 @@ model:
   name: nmn
   include_reading_module: true
   load_lstm: saves/cocoqa_lstm_10.caffemodel
+  train_lstm: false
   hidden_size: 500
   image_features: 64
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 
 from datum import Datum, Layout
-from indices import STRING_INDEX, LAYOUT_INDEX, ANSWER_INDEX
+from indices import STRING_INDEX, LAYOUT_INDEX, ANSWER_INDEX, UNK
 from parse import parse_tree
 from models.modules import \
         AttAnswerModule, DetectModule, DenseAnswerModule, ConjModule, \
@@ -24,10 +24,12 @@ def parse_to_layout(parse):
 
 def parse_to_layout_helper(parse, internal):
     if isinstance(parse, str):
-        return (DetectModule, LAYOUT_INDEX.index(parse))
+        #return (DetectModule, LAYOUT_INDEX.index(parse))
+        return (DetectModule, LAYOUT_INDEX.get_or_else(parse, LAYOUT_INDEX[UNK]))
     else:
         head = parse[0]
-        head_idx = LAYOUT_INDEX.index(parse)
+        #head_idx = LAYOUT_INDEX.index(parse)
+        head_idx = LAYOUT_INDEX.get_or_else(head, LAYOUT_INDEX[UNK])
         if internal:
             if head == "and":
                 mod_head = ConjModule
@@ -63,7 +65,15 @@ class CocoQADatum(Datum):
         with np.load(self.input_path) as zdata:
             assert len(zdata.keys()) == 1
             image_data = zdata[zdata.keys()[0]]
-        return image_data
+
+        pos_data = np.zeros((4, image_data.shape[1], image_data.shape[2]))
+
+        pos_data[0,...] = np.linspace(-1, 1, image_data.shape[1])[:,np.newaxis]
+        pos_data[1,...] = np.linspace(-1, 1, image_data.shape[2])[np.newaxis,:]
+        pos_data[2,...] = pos_data[0,...] ** 2
+        pos_data[3,...] = pos_data[1,...] ** 2
+
+        return np.concatenate((image_data, pos_data), axis=0)
 
 class CocoQATask:
     def __init__(self, config):
@@ -88,16 +98,33 @@ class CocoQATaskSet:
             self.by_layout_and_length = data_by_layout_and_length
             return
 
+        if set_name == "train":
+            # TODO better index
+            pred_counter = defaultdict(lambda: 0)
+            with open(PARSE_FILE % set_name) as parse_f:
+                for parse_str in parse_f:
+                    parse_preds = parse_str.strip() \
+                                           .replace("'", "") \
+                                           .replace("(", "") \
+                                           .replace(")", "") \
+                                           .split()
+                    for pred in parse_preds:
+                        pred_counter[pred] += 1
+            for pred, count in pred_counter.items():
+                if count <= 1:
+                    continue
+                LAYOUT_INDEX.index(pred)
 
         with open(STRING_FILE % set_name) as question_f, \
              open(PARSE_FILE % set_name) as parse_f, \
              open(ANN_FILE % set_name) as ann_f, \
              open(IMAGE_ID_FILE % set_name) as image_id_f:
 
+            unked = 0
             i = 0
             for question, parse_str, answer, image_id in \
                     zip(question_f, parse_f, ann_f, image_id_f):
-                #if i > 300:
+                #if i == 3000:
                 #    break
                 i += 1
             
@@ -108,16 +135,13 @@ class CocoQATaskSet:
                 words = question.split()
                 words = ["<s>"] + words + ["</s>"]
 
+                parse = parse_tree(parse_str)
+
                 answer = ANSWER_INDEX.index(answer)
                 words = [STRING_INDEX.index(w) for w in words]
-                parse = parse_tree(parse_str)
                 if len(parse) == 1:
                     parse = parse + ("object",)
-                #print parse
                 layout = parse_to_layout(parse)
-
-                if parse[0] != "what":
-                    continue
 
                 coco_set_name = "train" if set_name == "train" else "val"
                 try:

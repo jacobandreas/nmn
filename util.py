@@ -44,6 +44,10 @@ class Index:
       return None
     return self.contents[item]
 
+  def get_or_else(self, item, alt):
+    res = self[item]
+    return alt if res is None else res
+
   def index(self, item):
     if item not in self.contents:
       idx = len(self.contents)

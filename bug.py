@@ -1,23 +1,51 @@
 #!/usr/bin/env python2
 
 import caffe
+import apollocaffe
 from apollocaffe import ApolloNet, layers
 import numpy as np
+import timeit
 
 #caffe.set_mode_gpu()
+#apollocaffe.set_device(0)
 net = ApolloNet()
+batch_size = 16
 
-net.clear_forward()
-net.f(layers.NumpyData("words", data=np.random.randint(10, size=(7,))))
-print net.blobs["words"].shape
-net.f(layers.Wordvec("vecs", 10, 10, bottoms=["words"]))
-print net.blobs["vecs"].shape
+def prep():
+    net.clear_forward()
+    net.f(layers.NumpyData("input", data=np.random.random(size=(batch_size,512,20,20))))
 
-net.clear_forward()
-net.f(layers.NumpyData("words", data=np.random.randint(10, size=(14,))))
-print net.blobs["words"].shape
-net.f(layers.Wordvec("vecs", 10, 10, bottoms=["words"]))
-print net.blobs["vecs"].shape
+def load_layer():
+    net.clear_forward()
+    net.blobs["input"].data[...] = np.random.random(size=(batch_size,512,20,20))
+    net.f(layers.InnerProduct("ip", 512, bottoms=["input"]))
+
+def load_sloppy():
+    net.clear_forward()
+    net.f(layers.NumpyData("input", data=np.random.random(size=(batch_size,512,20,20))))
+    net.f(layers.InnerProduct("ip", 512, bottoms=["input"]))
+
+prep()
+
+print "layer", timeit.timeit("load_layer()", number=100, setup="from __main__ import load_layer")
+print "sloppy", timeit.timeit("load_sloppy()", number=100, setup="from __main__ import load_sloppy")
+
+#for i in range(32, 64):
+#    load(i)
+#    time = timeit.timeit('load(%d)' % i, number=100, setup="from __main__ import load")
+#    print time / i
+
+#net.clear_forward()
+#net.f(layers.NumpyData("words", data=np.random.randint(10, size=(7,))))
+#print net.blobs["words"].shape
+#net.f(layers.Wordvec("vecs", 10, 10, bottoms=["words"]))
+#print net.blobs["vecs"].shape
+#
+#net.clear_forward()
+#net.f(layers.NumpyData("words", data=np.random.randint(10, size=(14,))))
+#print net.blobs["words"].shape
+#net.f(layers.Wordvec("vecs", 10, 10, bottoms=["words"]))
+#print net.blobs["vecs"].shape
 
 #@profile
 #def main():

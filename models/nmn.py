@@ -65,7 +65,7 @@ class ModuleNetwork:
         return module.output_name
 
     def forward(self, indices, string, input, target, compute_eval):
-        self.input_module.forward(input)
+        self.input_module.forward(input, dropout=not compute_eval)
         self.support_module.forward()
 
         for module, mod_indices in zip(self.modules, indices):
@@ -180,7 +180,8 @@ class NMNModel:
 
     def get_net(self, query):
         if query not in self.nets:
-            net = ModuleNetwork(query, self, self.config.include_reading_module)
+            net = ModuleNetwork(query, self, hasattr(self.config, "include_reading_module") and 
+                                             self.config.include_reading_module)
             self.nets[query] = net
         return self.nets[query]
 
@@ -188,17 +189,19 @@ class NMNModel:
         if module == modules.DetectModule:
             assert len(incoming_names) == 0
             return module(
-                position, self.config.hidden_size, input_name, self.apollo_net)
+                position, self.config.image_features, input_name, self.apollo_net)
         elif module == modules.AttAnswerModule:
             return module(
-                position, self.config.hidden_size, input_name, incoming_names, self.apollo_net)
+                position, self.config.image_features, input_name, incoming_names, self.apollo_net)
         elif module == modules.DenseAnswerModule:
             return module(
-                position, self.config.hidden_size, incoming_names, self.apollo_net)
+                position, self.config.image_features, incoming_names, self.apollo_net)
         elif module == modules.ConjModule:
+            assert False
             return module(
                 position, incoming_names, self.apollo_net)
         elif module == modules.RedetectModule:
+            assert False
             assert len(incoming_names) == 1
             return module(
                 position, incoming_names[0], self.apollo_net)
@@ -227,5 +230,9 @@ class NMNModel:
                 output_name, self.apollo_net)
 
     def get_reading_module(self, output_name):
+        train_lstm = hasattr(self.config, "train_lstm") and \
+                     self.config.train_lstm
         return modules.LSTMModule(
-                self.config.hidden_size, output_name, self.apollo_net)
+                self.config.hidden_size, output_name, train_lstm, 
+                self.apollo_net)
+        #return modules.BOWModule(output_name, self.apollo_net)

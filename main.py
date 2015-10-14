@@ -60,7 +60,7 @@ def main():
             model.save("saves/%s_%d.caffemodel" % (config_name, i_iter))
         else:
             logging.info("%5d  :  %2.4f", i_iter, train_loss)
-        exit()
+        #exit()
 
 
 
@@ -73,7 +73,7 @@ def stack_indices(indices):
     else:
         return indices
 
-
+@profile
 def batched_iter(data, model, config, train=False, compute_eval=False):
     batch_loss = 0.
     batch_acc = 0.
@@ -181,7 +181,7 @@ def vis(model, batch_data, batch_output, first_input):
 
     if hasattr(model, "apollo_net") and hasattr(model, "answer_layer"):
         preds = np.argsort(-model.apollo_net.blobs[model.answer_layer].data[0,...])
-        predstrs = ", ".join([ANSWER_INDEX.get(p) for p in preds[:KBEST]]),
+        predstrs = ", ".join([ANSWER_INDEX.get(p) for p in preds[:KBEST]])
         fields.append(predstrs)
 
     fields.append(ANSWER_INDEX.get(batch_output[0]))
