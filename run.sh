@@ -12,5 +12,5 @@ export PYTHONPATH=$PYTHONPATH:$APOLLO_ROOT/python:$APOLLO_ROOT/python/caffe/prot
 
 #python main.py -c config/cocoqa_ensemble.yml
 #python main.py -c config/cocoqa_lstm.yml
-#python main.py -c config/cocoqa_nmn_alt.yml
-python main.py -c config/cocoqa_nmn.yml
+python main.py -c config/cocoqa_nmn_alt.yml
+#python main.py -c config/cocoqa_nmn.yml

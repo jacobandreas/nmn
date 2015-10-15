@@ -290,16 +290,14 @@ class DataModule:
             self.apollo_net.f(layers.NumpyData(self.output_name, data=data))
         elif dropout:
             self.apollo_net.f(layers.NumpyData(self.output_name + "_pre", data=data))
-            self.apollo_net.f(layers.Dropout(self.output_name + "_drop", 0.15,
+            self.apollo_net.f(layers.Dropout(self.output_name + "_drop", 0.5,
                 bottoms=[self.output_name + "_pre"]))
             self.apollo_net.f(layers.Convolution(self.output_name, (1,1), self.proj_size,
                 bottoms=[self.output_name + "_drop"]))
         else:
             self.apollo_net.f(layers.NumpyData(self.output_name + "_pre", data=data))
-            self.apollo_net.f(layers.Dropout(self.output_name + "_drop", 0.15,
-                bottoms=[self.output_name + "_pre"]))
             self.apollo_net.f(layers.Convolution(self.output_name, (1,1), self.proj_size,
-                bottoms=[self.output_name + "_drop"]))
+                bottoms=[self.output_name + "_pre"]))
 
 class ClassificationLogLossModule:
     def __init__(self, output_name, apollo_net):

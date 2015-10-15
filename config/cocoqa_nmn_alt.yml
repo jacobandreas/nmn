@@ -7,9 +7,9 @@ model:
   name: nmn
   include_reading_module: true
   load_lstm: saves/cocoqa_lstm_10.caffemodel
-  train_lstm: false
+  train_lstm: true
   hidden_size: 500
-  image_features: 64
+  image_features: 32
 
   # for best color results:
   # image_features: 32
