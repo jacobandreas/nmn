@@ -64,8 +64,9 @@ class ModuleNetwork:
 
         return module.output_name
 
+    @profile
     def forward(self, indices, string, input, target, compute_eval):
-        self.input_module.forward(input, dropout=not compute_eval)
+        self.input_module.forward(input) #, dropout=False) #dropout=not compute_eval)
         self.support_module.forward()
 
         for module, mod_indices in zip(self.modules, indices):
@@ -122,9 +123,10 @@ class NMNModel:
     def train(self):
         assert self.current_net is not None
         self.apollo_net.backward()
-        self.apollo_net.update(lr=self.opt_config.learning_rate,
-                               momentum=self.opt_config.momentum,
-                               clip_gradients=self.opt_config.clip)
+        self.update()
+        #self.apollo_net.update(lr=self.opt_config.learning_rate,
+        #                       momentum=self.opt_config.momentum,
+        #                       clip_gradients=self.opt_config.clip)
 
     def save(self, dest):
         self.apollo_net.save(dest)
@@ -167,13 +169,8 @@ class NMNModel:
                         self.sq_grads[param_name]) * grad
                 self.sq_updates[param_name] = (1 - rho) * np.square(update)
 
-            #print np.sum(np.square(update))
-            #print param.data.shape
-            #print update.shape
-            
-            param.data[...] += update
-            #print np.sqrt(np.sum(np.square(param.data)))
-        #print
+            param.data[...] += lr * update
+            param.diff[...] = 0
 
     def clear(self):
         self.current_net = None
@@ -210,10 +207,10 @@ class NMNModel:
 
     def get_input_module(self):
         if hasattr(self.config, "image_features"):
-            return modules.DataModule(
+            return modules.ImageDataModule(
                 "Input", self.apollo_net, proj_size=self.config.image_features)
         else:
-            return modules.DataModule("Input", self.apollo_net)
+            return modules.ImageDataModule("Input", self.apollo_net)
 
     def get_support_module(self):
         return modules.NullModule()

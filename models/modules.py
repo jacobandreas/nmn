@@ -72,6 +72,7 @@ class LSTMModule:
         else:
             self.param_mult = 0.0
 
+    @profile
     def forward(self, tokens):
         net = self.apollo_net
 
@@ -131,7 +132,12 @@ class DetectModule:
         self.scalar_name = name_prefix + "scalar"
         self.flatten_name = name_prefix + "flatten"
 
+        self.shared_name = name_prefix + "shared"
+        self.sum_name = name_prefix + "sum"
+
+        #self.output_name = self.sum_name
         self.output_name = self.flatten_name
+        #self.output_name = self.shared_name
 
     @profile
     def forward(self, indices):
@@ -149,6 +155,7 @@ class DetectModule:
             #64,
             len(LAYOUT_INDEX),
             bottoms=[self.indices_name]))
+            #weight_filler=layers.Filler("uniform", 0.001)))
 
         #self.apollo_net.f(layers.InnerProduct(
         #    self.proj_vector_name, channels, bottoms=[self.vector_name]))
@@ -163,6 +170,17 @@ class DetectModule:
 
         self.apollo_net.f(layers.Convolution(self.flatten_name, (1,1), 1,
             bottoms=[self.scalar_name]))
+            #weight_filler=layers.Filler("constant", 1), 
+            #bias_filler=layers.Filler("constant", 0.0),
+            #param_lr_mults=[0.0, 0.0]))
+
+        #self.apollo_net.f(layers.Convolution(self.shared_name, (1,1), 1,
+        #    bottoms=[self.input_name],
+        #    weight_filler=layers.Filler("uniform", 0.001),
+        #    param_lr_mults=[0.001, 0.001]))
+
+        #self.apollo_net.f(layers.Eltwise(self.sum_name, operation="SUM",
+        #    bottoms=[self.flatten_name, self.shared_name]))
         
 
 class ConjModule:
@@ -278,26 +296,42 @@ class AttAnswerModule:
                 operation="SUM"))
 
 class DataModule:
-    #def __init__(self, name, apollo_net, proj_size=None, dropout=False):
-    def __init__(self, name, apollo_net, proj_size=None):
-        self.apollo_net = apollo_net
+    def __init__(self, name, apollo_net):
         self.output_name = name
-        self.proj_size = proj_size
+        self.apollo_net = apollo_net
 
     @profile
-    def forward(self, data, dropout=False):
-        if self.proj_size is None:
+    def forward(self, data):
+        if self.output_name not in self.apollo_net.blobs.keys():
             self.apollo_net.f(layers.NumpyData(self.output_name, data=data))
-        elif dropout:
-            self.apollo_net.f(layers.NumpyData(self.output_name + "_pre", data=data))
-            self.apollo_net.f(layers.Dropout(self.output_name + "_drop", 0.5,
-                bottoms=[self.output_name + "_pre"]))
-            self.apollo_net.f(layers.Convolution(self.output_name, (1,1), self.proj_size,
-                bottoms=[self.output_name + "_drop"]))
         else:
-            self.apollo_net.f(layers.NumpyData(self.output_name + "_pre", data=data))
-            self.apollo_net.f(layers.Convolution(self.output_name, (1,1), self.proj_size,
-                bottoms=[self.output_name + "_pre"]))
+            self.apollo_net.blobs[self.output_name].data[:] = data
+
+class ImageDataModule:
+    def __init__(self, name, apollo_net, proj_size=None):
+        self.apollo_net = apollo_net
+        self.proj_size = proj_size
+
+        if self.proj_size is None:
+            self.data_name = name
+            self.output_name = self.data_name
+        else:
+            self.data_name = name + "_pre"
+            self.proj_name = name
+            self.output_name = self.proj_name
+
+    @profile
+    def forward(self, data):
+        assert len(data.shape) == 4
+        batch_size, channels, width, height = data.shape
+        if self.data_name not in self.apollo_net.blobs.keys():
+            self.apollo_net.f(layers.NumpyData(self.data_name, data=data))
+        else:
+            self.apollo_net.blobs[self.data_name].data[:] = data
+        if self.proj_size is not None:
+            self.apollo_net.f(layers.Convolution(
+                self.proj_name, (1,1), self.proj_size,
+                bottoms=[self.data_name]))
 
 class ClassificationLogLossModule:
     def __init__(self, output_name, apollo_net):

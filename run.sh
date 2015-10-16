@@ -6,7 +6,7 @@ export PYTHONPATH=$PYTHONPATH:$APOLLO_ROOT/python:$APOLLO_ROOT/python/caffe/prot
 
 #python -u -m cProfile main.py -c config/images_nmn.yml |& tee profile
 #python main.py -c config/images_lstm.yml
-#kernprof -l main.py -c config/cocoqa_nmn.yml
+#kernprof -l main.py -c config/cocoqa_nmn_alt.yml
 #python simple.py
 #python bug.py
 

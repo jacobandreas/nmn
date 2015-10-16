@@ -6,10 +6,10 @@ task:
 model:
   name: nmn
   include_reading_module: true
-  load_lstm: saves/cocoqa_lstm_10.caffemodel
-  train_lstm: true
+  load_lstm: saves/cocoqa_lstm_25.caffemodel
+  train_lstm: false
   hidden_size: 500
-  image_features: 32
+  image_features: 64
 
   # for best color results:
   # image_features: 32
@@ -21,3 +21,7 @@ opt:
   momentum: 0.9
   clip: 10
   iters: 1001
+
+  rho: 0.95
+  epsilon: 0.00001
+  lr: 0.1

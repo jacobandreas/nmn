@@ -124,9 +124,6 @@ class CocoQATaskSet:
             i = 0
             for question, parse_str, answer, image_id in \
                     zip(question_f, parse_f, ann_f, image_id_f):
-                #if i == 3000:
-                #    break
-                i += 1
             
                 question = question.strip()
                 parse_str = parse_str.strip().replace("'", "")
@@ -142,6 +139,10 @@ class CocoQATaskSet:
                 if len(parse) == 1:
                     parse = parse + ("object",)
                 layout = parse_to_layout(parse)
+
+                #if i == 640:
+                #    continue
+                i += 1
 
                 coco_set_name = "train" if set_name == "train" else "val"
                 try:

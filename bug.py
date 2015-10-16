@@ -7,28 +7,68 @@ import numpy as np
 import timeit
 
 #caffe.set_mode_gpu()
-#apollocaffe.set_device(0)
+apollocaffe.set_device(0)
 net = ApolloNet()
-batch_size = 16
+batch_size = 64
 
-def prep():
+data = np.random.random(size=(batch_size, 512, 20, 20)).astype(np.float32)
+labels = np.random.randint(10, size=(batch_size,)).astype(np.int32).astype(np.float32)
+
+#print data.dtype
+#print labels.dtype
+
+#def load_mem():
+#    net.clear_forward()
+#    net.f(layers.MemoryData(
+#        "mem", data, labels, tops=["input_top", "label_top"],
+#        batch_size=batch_size, channels=512, width=20, height=20))
+#
+#def load_np():
+#    net.clear_forward()
+#    net.f(layers.NumpyData("np", data))
+#
+#load_mem()
+#load_np()
+
+#data = np.zeros((64, 512, 20, 20))
+for i in range(10):
+    print
     net.clear_forward()
-    net.f(layers.NumpyData("input", data=np.random.random(size=(batch_size,512,20,20))))
-
-def load_layer():
+    import time; s = time.time()
+    net.f(layers.NumpyData('a', data))
+    print time.time() - s
+    import time; s = time.time()
     net.clear_forward()
-    net.blobs["input"].data[...] = np.random.random(size=(batch_size,512,20,20))
-    net.f(layers.InnerProduct("ip", 512, bottoms=["input"]))
+    net.blobs['a'].data[:] = data
+    print time.time() - s
 
-def load_sloppy():
+    import time; s = time.time()
     net.clear_forward()
-    net.f(layers.NumpyData("input", data=np.random.random(size=(batch_size,512,20,20))))
-    net.f(layers.InnerProduct("ip", 512, bottoms=["input"]))
+    net.f(layers.MemoryData(
+        "b", data, labels, tops=["input_top", "label_top"],
+        batch_size=batch_size, channels=512, width=20, height=20))
+    print time.time() - s
 
-prep()
+    
 
-print "layer", timeit.timeit("load_layer()", number=100, setup="from __main__ import load_layer")
-print "sloppy", timeit.timeit("load_sloppy()", number=100, setup="from __main__ import load_sloppy")
+#def prep():
+#    net.clear_forward()
+#    net.f(layers.NumpyData("input", data=np.random.random(size=(batch_size,512,20,20))))
+#
+#def load_layer():
+#    net.clear_forward()
+#    net.blobs["input"].data[...] = np.random.random(size=(batch_size,512,20,20))
+#    net.f(layers.InnerProduct("ip", 512, bottoms=["input"]))
+#
+#def load_sloppy():
+#    net.clear_forward()
+#    net.f(layers.NumpyData("input", data=np.random.random(size=(batch_size,512,20,20))))
+#    net.f(layers.InnerProduct("ip", 512, bottoms=["input"]))
+#
+#prep()
+#
+#print "mem", timeit.timeit("load_mem()", number=100, setup="from __main__ import load_mem")
+#print "np", timeit.timeit("load_np()", number=100, setup="from __main__ import load_np")
 
 #for i in range(32, 64):
 #    load(i)
