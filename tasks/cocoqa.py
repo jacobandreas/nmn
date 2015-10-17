@@ -16,8 +16,8 @@ STRING_FILE = "data/cocoqa/%s/questions.txt"
 PARSE_FILE = "data/cocoqa/%s/questions.sp"
 ANN_FILE = "data/cocoqa/%s/answers.txt"
 IMAGE_ID_FILE = "data/cocoqa/%s/img_ids.txt"
-IMAGE_FILE = "data/images/Images/%s2014/conv/COCO_%s2014_%012d.jpg.npz"
-RAW_IMAGE_FILE = "data/images/Images/%s2014/COCO_%s2014_%012d.jpg"
+IMAGE_FILE = "data/vqa/Images/%s2014/conv/COCO_%s2014_%012d.jpg.npz"
+RAW_IMAGE_FILE = "data/vqa/Images/%s2014/COCO_%s2014_%012d.jpg"
 
 def parse_to_layout(parse):
     return Layout(*parse_to_layout_helper(parse, internal=False))
