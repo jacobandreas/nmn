@@ -6,7 +6,7 @@ task:
 model:
   name: nmn
   include_reading_module: true
-  load_lstm: /media/data/nmn/saves/cocoqa_lstm_5.caffemodel
+  load_lstm: /media/data/nmn/saves/cocoqa_lstm_10.caffemodel
   train_lstm: true
   hidden_size: 500
   image_features: 64
