@@ -126,6 +126,10 @@ class LSTMModule:
         net.f(layers.Softmax(self.model_softmax_name,
             bottoms=[self.model_weight_name]))
 
+        batch_size = self.apollo_net.blobs[self.ip_name].shape[0]
+        self.apollo_net.blobs[self.ip_name].reshape((batch_size, 1, len(ANSWER_INDEX), 1))
+        self.apollo_net.blobs[self.incoming_name].reshape((batch_size, 1, len(ANSWER_INDEX), 1))
+
         net.f(layers.Concat(self.stack_name, bottoms=[self.ip_name,
             self.incoming_name]))
 
@@ -134,6 +138,8 @@ class LSTMModule:
 
         net.f(layers.Convolution(self.mixing_name, (1,1), 1,
             bottoms=[self.model_scalar_name]))
+
+        self.apollo_net.blobs[self.mixing_name].reshape((batch_size, len(ANSWER_INDEX)))
 
         #net.f(layers.ReLU(self.relu_name, bottoms=[self.ip_name]))
 
