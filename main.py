@@ -10,6 +10,7 @@ import tasks
 import util
 from visualizer import visualizer
 
+import apollocaffe
 import argparse
 from collections import defaultdict
 import importlib
@@ -19,6 +20,9 @@ import numpy as np
 import yaml
 
 KBEST=5
+
+np.random.seed(0)
+apollocaffe.set_random_seed(0)
 
 arg_parser = argparse.ArgumentParser()
 arg_parser.add_argument("-c", "--config", dest="config", required=True,

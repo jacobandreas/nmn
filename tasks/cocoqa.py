@@ -140,7 +140,7 @@ class CocoQATaskSet:
                     parse = parse + ("object",)
                 layout = parse_to_layout(parse)
 
-                #if i == 640:
+                #if i == 300:
                 #    continue
                 i += 1
 

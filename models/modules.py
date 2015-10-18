@@ -174,13 +174,12 @@ class DetectModule:
             #bias_filler=layers.Filler("constant", 0.0),
             #param_lr_mults=[0.0, 0.0]))
 
-        #self.apollo_net.f(layers.Convolution(self.shared_name, (1,1), 1,
-        #    bottoms=[self.input_name],
-        #    weight_filler=layers.Filler("uniform", 0.001),
-        #    param_lr_mults=[0.001, 0.001]))
+        #### self.apollo_net.f(layers.Convolution(self.shared_name, (1,1), 1,
+        ####     bottoms=[self.input_name],
+        ####     weight_filler=layers.Filler("uniform", 0.001)))
 
-        #self.apollo_net.f(layers.Eltwise(self.sum_name, operation="SUM",
-        #    bottoms=[self.flatten_name, self.shared_name]))
+        ## self.apollo_net.f(layers.Eltwise(self.sum_name, operation="SUM",
+        ##     bottoms=[self.flatten_name, self.shared_name]))
         
 
 class ConjModule:

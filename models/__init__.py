@@ -9,7 +9,6 @@ import apollocaffe
 import caffe
 
 #apollocaffe.set_device(0)
-apollocaffe.set_random_seed(0)
 #apollocaffe.set_cpp_loglevel(1)
 
 def build_model(config, opt_config):

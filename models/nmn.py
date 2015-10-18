@@ -42,6 +42,8 @@ class ModuleNetwork:
         self.answer_layer = output_name
         self.attention_layer = self.modules[0].output_name
 
+        self.model = model
+
     def wire(self, modules, query, model):
         if not isinstance(query, tuple):
             position = len(modules)
@@ -77,6 +79,7 @@ class ModuleNetwork:
 
         self.target_module.forward(target)
         loss = self.loss_module.forward(target)
+
         if compute_eval:
             eval = self.eval_module.forward(target)
             return loss, eval
@@ -123,7 +126,16 @@ class NMNModel:
     def train(self):
         assert self.current_net is not None
         self.apollo_net.backward()
+
+        #print self.apollo_net.blobs["AttAnswer_1__ip"].data[0,:25]
+        #print self.apollo_net.params.keys()
+        #print np.sum(self.apollo_net.params["Detect_0__vec.p0"].diff)
+
         self.update()
+
+        #print self.apollo_net.blobs["AttAnswer_1__ip"].diff[0,5]
+        #exit()
+
         #self.apollo_net.update(lr=self.opt_config.learning_rate,
         #                       momentum=self.opt_config.momentum,
         #                       clip_gradients=self.opt_config.clip)
