@@ -113,7 +113,10 @@ class CocoQATaskSet:
             for pred, count in pred_counter.items():
                 if count <= 1:
                     continue
-                LAYOUT_INDEX.index(pred)
+                if len(LAYOUT_INDEX) < 256:
+                    LAYOUT_INDEX.index(pred)
+                else:
+                    LAYOUT_INDEX.collide(pred)
 
         with open(STRING_FILE % set_name) as question_f, \
              open(PARSE_FILE % set_name) as parse_f, \

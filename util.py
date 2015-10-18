@@ -1,3 +1,6 @@
+
+import numpy as np
+
 class Struct:
   def __init__(self, **entries):
     rec_entries = {}
@@ -54,6 +57,12 @@ class Index:
       self.ordered_contents.append(item)
       self.contents[item] = idx
       self.reverse_contents[idx] = item
+    return self[item]
+
+  def collide(self, item):
+    if item not in self.contents:
+      idx = np.random.randint(len(self.contents))
+      self.contents[item] = idx
     return self[item]
 
   def get(self, idx):
