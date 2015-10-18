@@ -57,7 +57,7 @@ def main():
             logging.info("%5d  :  %2.4f  %2.4f  %2.4f  :  %2.4f  %2.4f  %2.4f",
                     i_iter, train_loss, val_loss, test_loss, train_acc, val_acc, 
                     test_acc)
-            model.save("saves/%s_%d.caffemodel" % (config_name, i_iter))
+            #model.save("saves/%s_%d.caffemodel" % (config_name, i_iter))
         else:
             logging.info("%5d  :  %2.4f", i_iter, train_loss)
         #exit()
