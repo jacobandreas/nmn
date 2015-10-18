@@ -58,8 +58,15 @@ class LSTMModule:
         self.relu_name = "LSTM__relu"
         self.sum_name = "LSTM__sum"
 
+        self.model_weight_name = "LSTM__model_weight"
+        self.model_softmax_name = "LSTM__model_softmax"
+        self.model_scalar_name = "LSTM__model_scalar"
+        self.stack_name = "LSTM__stack"
+        self.mixing_name = "LSTM__mixing"
+
         #self.output_name = self.relu_name
-        self.output_name = self.sum_name
+        #self.output_name = self.sum_name
+        self.output_name = self.mixing_name
 
         self.wordvec_param_name = "LSTM__wordvec_param"
         self.input_value_param_name = "LSTM__input_value_param"
@@ -112,10 +119,27 @@ class LSTMModule:
         net.f(layers.InnerProduct(
             self.ip_name, len(ANSWER_INDEX), bottoms=[hidden_name],
             param_lr_mults=[self.param_mult] * 2))
-        net.f(layers.ReLU(self.relu_name, bottoms=[self.ip_name]))
-        net.f(layers.Eltwise(
-            self.sum_name, bottoms=[self.relu_name, self.incoming_name],
-            operation="SUM"))
+
+        net.f(layers.InnerProduct(
+            self.model_weight_name, 2, bottoms=[hidden_name]))
+
+        net.f(layers.Softmax(self.model_softmax_name,
+            bottoms=[self.model_weight_name]))
+
+        net.f(layers.Concat(self.stack_name, bottoms=[self.ip_name,
+            self.incoming_name]))
+
+        net.f(layers.Scalar(self.model_scalar_name, 0, bottoms=[self.stack_name,
+            self.model_softmax_name]))
+
+        net.f(layers.Convolution(self.mixing_name, (1,1), 1,
+            bottoms=[self.model_scalar_name]))
+
+        #net.f(layers.ReLU(self.relu_name, bottoms=[self.ip_name]))
+
+        #net.f(layers.Eltwise(
+        #    self.sum_name, bottoms=[self.relu_name, self.incoming_name],
+        #    operation="SUM"))
 
 class DetectModule:
     def __init__(self, position, hidden_size, input_name, apollo_net):
