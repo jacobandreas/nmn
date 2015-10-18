@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export APOLLO_ROOT=$HOME/3p/apollocaffe
+export APOLLO_ROOT=/home/ubuntu/3p/apollocaffe
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$APOLLO_ROOT/build/lib
 export PYTHONPATH=$PYTHONPATH:$APOLLO_ROOT/python:$APOLLO_ROOT/python/caffe/proto
 
@@ -12,5 +12,5 @@ export PYTHONPATH=$PYTHONPATH:$APOLLO_ROOT/python:$APOLLO_ROOT/python/caffe/prot
 
 #python main.py -c config/cocoqa_ensemble.yml
 #python main.py -c config/cocoqa_lstm.yml
-python main.py -c config/cocoqa_nmn_alt.yml 2> err.log
+python main.py -c config/cocoqa_nmn_alt.yml
 #python main.py -c config/cocoqa_nmn.yml
