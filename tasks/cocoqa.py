@@ -110,14 +110,14 @@ class CocoQATaskSet:
                                            .split()
                     for pred in parse_preds:
                         pred_counter[pred] += 1
-            LAYOUT_INDEX.index("color")
-            LAYOUT_INDEX.index("where")
-            LAYOUT_INDEX.index("what")
-            LAYOUT_INDEX.index("count")
+            LAYOUT_INDEX.contents["color"] = 0
+            LAYOUT_INDEX.contents["where"] = 1
+            LAYOUT_INDEX.contents["what"] = 2
+            LAYOUT_INDEX.contents["count"] = 3
             for pred, count in pred_counter.items():
                 if count <= 1:
                     continue
-                if len(LAYOUT_INDEX.contents) < 256:
+                if len(LAYOUT_INDEX.contents) < 4:
                     LAYOUT_INDEX.index(pred)
                 else:
                     LAYOUT_INDEX.collide(pred)
