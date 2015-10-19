@@ -44,7 +44,8 @@ def main():
     model = models.build_model(config.model, config.opt)
 
     for i_iter in range(config.opt.iters):
-        do_eval = i_iter % 5 == 0
+        #do_eval = i_iter % 5 == 0
+        do_eval = True
         train_loss, train_acc = batched_iter(
                 task.train, model, config, train=True, compute_eval=do_eval)
         if do_eval:

@@ -186,13 +186,13 @@ class NMNModel:
         if module == modules.DetectModule:
             assert len(incoming_names) == 0
             return module(
-                position, self.config.image_features, input_name, self.apollo_net)
+                position, None, input_name, self.apollo_net)
         elif module == modules.AttAnswerModule:
             return module(
-                position, self.config.image_features, input_name, incoming_names, self.apollo_net)
+                position, None, input_name, incoming_names, self.apollo_net)
         elif module == modules.DenseAnswerModule:
             return module(
-                position, self.config.image_features, incoming_names, self.apollo_net)
+                position, None, incoming_names, self.apollo_net)
         elif module == modules.ConjModule:
             assert False
             return module(
