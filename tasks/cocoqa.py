@@ -113,7 +113,7 @@ class CocoQATaskSet:
             for pred, count in pred_counter.items():
                 if count <= 1:
                     continue
-                if len(LAYOUT_INDEX) < 256:
+                if len(LAYOUT_INDEX) < 16:
                     LAYOUT_INDEX.index(pred)
                 else:
                     LAYOUT_INDEX.collide(pred)

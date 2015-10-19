@@ -69,7 +69,8 @@ class Index:
     return self.reverse_contents[idx]
 
   def __len__(self):
-    return len(self.contents)
+    #return len(self.contents)
+    return len(self.reverse_contents)
 
   def __iter__(self):
     return iter(self.ordered_contents)
