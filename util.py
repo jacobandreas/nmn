@@ -61,7 +61,7 @@ class Index:
 
   def collide(self, item):
     if item not in self.contents:
-      idx = np.random.randint(len(self.contents))
+      idx = np.random.randint(len(self.reverse_contents))
       self.contents[item] = idx
     return self[item]
 

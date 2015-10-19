@@ -110,10 +110,14 @@ class CocoQATaskSet:
                                            .split()
                     for pred in parse_preds:
                         pred_counter[pred] += 1
+            LAYOUT_INDEX.index("color")
+            LAYOUT_INDEX.index("where")
+            LAYOUT_INDEX.index("what")
+            LAYOUT_INDEX.index("count")
             for pred, count in pred_counter.items():
                 if count <= 1:
                     continue
-                if len(LAYOUT_INDEX) < 16:
+                if len(LAYOUT_INDEX.contents) < 16:
                     LAYOUT_INDEX.index(pred)
                 else:
                     LAYOUT_INDEX.collide(pred)
@@ -143,8 +147,8 @@ class CocoQATaskSet:
                     parse = parse + ("object",)
                 layout = parse_to_layout(parse)
 
-                #if i == 300:
-                #    continue
+                if i == 1000:
+                    continue
                 i += 1
 
                 coco_set_name = "train" if set_name == "train" else "val"
