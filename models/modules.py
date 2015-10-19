@@ -273,8 +273,6 @@ class AttAnswerModule:
         self.reduction_name = name_prefix + "reduction"
         self.indices_name = name_prefix + "indices"
         self.bias_name = name_prefix + "bias"
-        self.hidden_name = name_prefix + "ip_hidden"
-        self.relu_name = name_prefix + "relu"
         self.ip_name = name_prefix + "ip"
         self.sum_name = name_prefix + "sum"
 
@@ -312,11 +310,6 @@ class AttAnswerModule:
         self.apollo_net.f(layers.Reduction(
             self.reduction_name, axis=2, bottoms=[self.attention_name]))
 
-        self.apollo_net.f(layers.InnerProduct(
-            self.hidden_name, 256, bottoms=[self.reduction_name]))
-
-        self.apollo_net.f(layers.ReLU(self.relu_name, bottoms=[self.hidden_name]))
-
         self.apollo_net.f(layers.NumpyData(self.indices_name, indices))
 
         self.apollo_net.f(layers.Wordvec(
@@ -326,7 +319,7 @@ class AttAnswerModule:
         self.apollo_net.f(layers.InnerProduct(
                 self.ip_name,
                 len(ANSWER_INDEX),
-                bottoms=[self.relu_name]))
+                bottoms=[self.reduction_name]))
 
         self.apollo_net.f(layers.Eltwise(
                 self.sum_name, bottoms=[self.bias_name, self.ip_name],
