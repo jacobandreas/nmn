@@ -25,7 +25,8 @@ def parse_to_layout(parse):
 def parse_to_layout_helper(parse, internal):
     if isinstance(parse, str):
         #return (DetectModule, LAYOUT_INDEX.index(parse))
-        return (DetectModule, LAYOUT_INDEX.get_or_else(parse, LAYOUT_INDEX[UNK]))
+        #return (DetectModule, LAYOUT_INDEX.get_or_else(parse, LAYOUT_INDEX[UNK]))
+        return (MLPDetectModule, LAYOUT_INDEX.get_or_else(parse, LAYOUT_INDEX[UNK]))
     else:
         head = parse[0]
         #head_idx = LAYOUT_INDEX.index(parse)

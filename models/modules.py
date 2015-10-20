@@ -147,6 +147,62 @@ class LSTMModule:
         #    self.sum_name, bottoms=[self.relu_name, self.incoming_name],
         #    operation="SUM"))
 
+class MLPDetectModule:
+    def __init__(self, position, hidden_size, input_name, apollo_net):
+        self.hidden_size = hidden_size
+        self.input_name = input_name
+        self.apollo_net = apollo_net
+
+        name_prefix = "MLPDetect_%d__" % position
+        self.image_hidden_name = name_prefix + "image_hidden"
+        self.image_relu_name = name_prefix + "image_relu"
+        self.indices_name = name_prefix + "indices"
+        self.vector_name = name_prefix + "vec"
+        self.tile_name = name_prefix + "tile"
+        self.add_name = name_prefix + "add"
+        self.relu_name = name_prefix + "relu"
+        self.output_prod_name = name_prefix + "output_prod"
+        self.output_relu_name = name_prefix + "output_relu"
+        
+        self.output_name = self.output_relu_name
+
+    @profile
+    def forward(self, indices):
+        batch_size, channels, width, height = self.apollo_net.blobs[self.input_name].shape
+
+        self.apollo_net.f(layers.NumpyData(self.indices_name, indices))
+        
+        self.apollo_net.f(layers.Convolution(
+            self.image_hidden_name, (1,1), self.hidden_size, bottoms=[self.input_name]))
+
+        self.apollo_net.f(layers.ReLU(self.image_relu_name, bottoms=[self.image_hidden_name]))
+
+        self.apollo_net.f(layers.Wordvec(
+            self.vector_name, self.hidden_size, len(LAYOUT_INDEX), 
+            bottoms=[self.indices_name]))
+
+        self.apollo_net.blobs[self.vector_name].reshape((batch_size,
+            self.hidden_size, 1))
+
+        self.apollo_net.f(layers.Tile(
+            self.tile_name, axis=2, tiles=width*height,
+            bottoms=[self.vector_name]))
+
+        self.apollo_net.blobs[self.tile_name].reshape((batch_size, 
+                                                       self.hidden_size, 
+                                                       width, 
+                                                       height))
+
+        self.apollo_net.f(layers.Eltwise(
+            self.add_name, operation="SUM", bottoms=[self.tile_name,
+                self.image_relu_name]))
+
+        self.apollo_net.f(layers.Convolution(
+            self.output_prod_name, (1, 1), 1, bottoms[self.add_name]))
+
+        self.apollo_net.f(layers.ReLU(self.output_relu_name,
+            bottoms=[self.output_prod_name]))
+
 class DetectModule:
     def __init__(self, position, hidden_size, input_name, apollo_net):
         self.hidden_size = hidden_size
