@@ -163,8 +163,8 @@ class MLPDetectModule:
         self.relu_name = name_prefix + "relu"
         self.output_prod_name = name_prefix + "output_prod"
         self.direct_name = name_prefix + "direct"
-        #self.final_sum_name = name_prefix + "final_sum"
-        #self.output_relu_name = name_prefix + "output_relu"
+        self.final_sum_name = name_prefix + "final_sum"
+        self.output_relu_name = name_prefix + "output_relu"
         
         self.output_name = self.output_prod_name
 
@@ -202,14 +202,15 @@ class MLPDetectModule:
         self.apollo_net.f(layers.Convolution(
             self.output_prod_name, (1, 1), 1, bottoms=[self.image_relu_name]))
 
-        #self.apollo_net.f(layers.Convolution(
-        #    self.direct_name, (1, 1), 1, bottoms=[self.input_name]))
+        self.apollo_net.f(layers.Convolution(
+            self.direct_name, (1, 1), 1, bottoms=[self.input_name]))
 
-        #self.apollo_net.f(layers.Eltwise(
-        #    self.final_sum_name, operation="SUM", bottoms=
+        self.apollo_net.f(layers.Eltwise(
+            self.final_sum_name, operation="SUM",
+            bottoms=[self.output_prod_name, self.direct_name]))
 
-        #self.apollo_net.f(layers.ReLU(self.output_relu_name,
-        #    bottoms=[self.output_prod_name]))
+        self.apollo_net.f(layers.ReLU(self.output_relu_name,
+            bottoms=[self.final_sum_name]))
 
 class DetectModule:
     def __init__(self, position, hidden_size, input_name, apollo_net):
