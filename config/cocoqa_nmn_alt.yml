@@ -10,7 +10,7 @@ model:
   train_lstm: true
   hidden_size: 500
 
-  detector_hidden_size: 512
+  detector_hidden_size: 256
   #image_features: 64
 
   # for best color results:
