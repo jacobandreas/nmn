@@ -190,7 +190,7 @@ class NMNModel:
         elif module == modules.MLPDetectModule:
             assert len(incoming_names) == 0
             return module(
-                position, 256, input_name, self.apollo_net)
+                position, self.config.detector_hidden_size, input_name, self.apollo_net)
         elif module == modules.AttAnswerModule:
             return module(
                 position, None, input_name, incoming_names, self.apollo_net)
