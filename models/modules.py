@@ -198,7 +198,7 @@ class MLPDetectModule:
                 self.image_relu_name]))
 
         self.apollo_net.f(layers.Convolution(
-            self.output_prod_name, (1, 1), 1, bottoms[self.add_name]))
+            self.output_prod_name, (1, 1), 1, bottoms=[self.add_name]))
 
         self.apollo_net.f(layers.ReLU(self.output_relu_name,
             bottoms=[self.output_prod_name]))

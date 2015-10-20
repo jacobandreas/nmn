@@ -5,7 +5,7 @@ from indices import STRING_INDEX, LAYOUT_INDEX, ANSWER_INDEX, UNK
 from parse import parse_tree
 from models.modules import \
         AttAnswerModule, DetectModule, DenseAnswerModule, ConjModule, \
-        RedetectModule
+        RedetectModule, MLPDetectModule
 
 from collections import defaultdict
 import logging
