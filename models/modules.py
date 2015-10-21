@@ -164,9 +164,9 @@ class MLPDetectModule:
         self.output_prod_name = name_prefix + "output_prod"
         self.direct_name = name_prefix + "direct"
         #self.final_sum_name = name_prefix + "final_sum"
-        self.output_relu_name = name_prefix + "output_relu"
+        #self.output_relu_name = name_prefix + "output_relu"
         
-        self.output_name = self.output_relu_name
+        self.output_name = self.output_prod_name
 
     @profile
     def forward(self, indices):
@@ -208,8 +208,8 @@ class MLPDetectModule:
         #self.apollo_net.f(layers.Eltwise(
         #    self.final_sum_name, operation="SUM", bottoms=
 
-        self.apollo_net.f(layers.ReLU(self.output_relu_name,
-            bottoms=[self.output_prod_name]))
+        #self.apollo_net.f(layers.ReLU(self.output_relu_name,
+        #    bottoms=[self.output_prod_name]))
 
 class DetectModule:
     def __init__(self, position, hidden_size, input_name, apollo_net):
