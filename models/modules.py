@@ -342,14 +342,22 @@ class ImageDataModule:
         self.apollo_net = apollo_net
         self.proj_size = proj_size
 
+        self.dropout = True
+
         if self.proj_size is None:
             self.data_name = name
+            self.loaded_name = self.data_name
             self.output_name = self.data_name
         else:
             self.data_name = name + "_pre"
             self.proj_name = name + "_proj"
             self.relu_name = name + "_relu"
+            self.loaded_name = self.relu_name
             self.output_name = self.relu_name
+
+        if self.dropout:
+            self.dropout_name = name + "_drop"
+            self.output_name = self.dropout_name
 
     @profile
     def forward(self, data):
@@ -359,12 +367,17 @@ class ImageDataModule:
             self.apollo_net.f(layers.NumpyData(self.data_name, data=data))
         else:
             self.apollo_net.blobs[self.data_name].data[:] = data
+
         if self.proj_size is not None:
             self.apollo_net.f(layers.Convolution(
                 self.proj_name, (1,1), self.proj_size,
                 bottoms=[self.data_name]))
             self.apollo_net.f(layers.ReLU(
                 self.relu_name, bottoms=[self.proj_name]))
+
+        if self.dropout:
+            self.apollo_net.f(layers.Dropout(
+                self.dropout_name, 0.5, bottoms=[self.loaded_name]))
 
 class ClassificationLogLossModule:
     def __init__(self, output_name, apollo_net):
