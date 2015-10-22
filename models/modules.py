@@ -52,6 +52,7 @@ class LSTMModule:
         self.mem_name = "LSTM__mem_%d"
         self.word_name = "LSTM__word_%d"
         self.wordvec_name = "LSTM__wordvec_%d"
+        self.dropout_in_name = "LSTM__drop_in_%d"
         self.concat_name = "LSTM__concat_%d"
         self.lstm_name = "LSTM__lstm_%d"
         self.ip_name = "LSTM__ip"
@@ -62,6 +63,7 @@ class LSTMModule:
         self.model_softmax_name = "LSTM__model_softmax"
         self.model_scalar_name = "LSTM__model_scalar"
         self.stack_name = "LSTM__stack"
+        self.dropout_out_name = "LSTM__drop_out"
         self.mixing_name = "LSTM__mixing"
 
         #self.output_name = self.relu_name
@@ -89,6 +91,7 @@ class LSTMModule:
         for t in range(tokens.shape[1]):
             word_name = self.word_name % t
             wordvec_name = self.wordvec_name % t
+            dropout_in_name = self.dropout_in_name % t
             concat_name = self.concat_name % t
             lstm_name = self.lstm_name % t
             hidden_name = self.hidden_name % t
@@ -105,8 +108,10 @@ class LSTMModule:
                 wordvec_name, self.hidden_size, len(STRING_INDEX),
                 bottoms=[word_name], param_names=[self.wordvec_param_name],
                 param_lr_mults=[self.param_mult]))
+            net.f(layers.Dropout(
+                dropout_in_name, 0.5, bottoms=[wordvec_name]))
 
-            net.f(layers.Concat(concat_name, bottoms=[prev_hidden, wordvec_name]))
+            net.f(layers.Concat(concat_name, bottoms=[prev_hidden, dropout_in_name]))
             net.f(layers.LstmUnit(
                 lstm_name, bottoms=[concat_name, prev_mem],
                 param_names=[self.input_value_param_name,
@@ -133,8 +138,13 @@ class LSTMModule:
         net.f(layers.Concat(self.stack_name, bottoms=[self.ip_name,
             self.incoming_name]))
 
-        net.f(layers.Scalar(self.model_scalar_name, 0, bottoms=[self.stack_name,
+        net.f(layers.Dropout(self.dropout_out_name, 0.5,
+            bottoms=[self.stack_name]))
+
+        net.f(layers.Scalar(self.model_scalar_name, 0,
+            bottoms=[self.dropout_out_name,
             self.model_softmax_name]))
+
 
         net.f(layers.Convolution(self.mixing_name, (1,1), 1,
             bottoms=[self.model_scalar_name]))
