@@ -321,7 +321,7 @@ class AttAnswerModule:
 
         self.apollo_net.f(layers.InnerProduct(
                 self.ip1_name,
-                64,
+                self.hidden_size,
                 #len(ANSWER_INDEX),
                 bottoms=[self.reduction_name]))
 
