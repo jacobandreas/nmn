@@ -38,7 +38,6 @@ class ModuleNetwork:
 
         self.target_module = model.get_target_module()
         self.loss_module = model.get_loss_module(output_name)
-        self.eval_module = model.get_eval_module(output_name)
         self.answer_layer = output_name
         self.attention_layer = self.modules[0].output_name
 
@@ -65,7 +64,7 @@ class ModuleNetwork:
         return module.output_name
 
     @profile
-    def forward(self, indices, string, input, target, compute_eval):
+    def forward(self, indices, string, input, target):
         self.input_module.forward(input) #, dropout=False) #dropout=not compute_eval)
         self.support_module.forward()
 
@@ -77,11 +76,7 @@ class ModuleNetwork:
 
         self.target_module.forward(target)
         loss = self.loss_module.forward(target)
-        if compute_eval:
-            eval = self.eval_module.forward(target)
-            return loss, eval
-        else:
-            return loss, None
+        return loss
 
 class NMNModel:
     def __init__(self, config, opt_config):
@@ -99,7 +94,7 @@ class NMNModel:
         if hasattr(config, "load_lstm"):
             self.apollo_net.load(self.config.load_lstm)
 
-    def forward(self, layout_type, indices, string, input, target, compute_eval=False):
+    def forward(self, layout_type, indices, string, input, target):
         assert self.current_net is None
         self.apollo_net.clear_forward()
         self.current_net = self.get_net(layout_type)
@@ -107,7 +102,9 @@ class NMNModel:
         linearize(lin_indices, indices)
         self.answer_layer = self.current_net.answer_layer
         self.attention_layer = self.current_net.attention_layer
-        return self.current_net.forward(lin_indices, string, input, target, compute_eval)
+        loss = self.current_net.forward(lin_indices, string, input, target)
+        self.predictions = self.apollo_net.blobs[self.answer_layer].data
+        return loss
         #if not self.loaded_lstm and hasattr(self.config, "load_lstm"):
         #    self.apollo_net.load(self.config.load_lstm)
         #    self.apollo_net.clear_forward()
@@ -187,7 +184,7 @@ class NMNModel:
             assert len(incoming_names) == 0
             return module(
                 position, None, input_name, self.apollo_net)
-        elif module == modules.AttAnswerModule:
+        elif module == modules.AttAnswerModule or module == modules.AttAnswerModuleCopy:
             return module(
                 position, None, input_name, incoming_names, self.apollo_net)
         elif module == modules.DenseAnswerModule:
@@ -220,10 +217,6 @@ class NMNModel:
 
     def get_loss_module(self, output_name):
         return modules.ClassificationLogLossModule(
-                output_name, self.apollo_net)
-
-    def get_eval_module(self, output_name):
-        return modules.ClassificationAccuracyModule(
                 output_name, self.apollo_net)
 
     def get_reading_module(self, output_name):

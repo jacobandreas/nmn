@@ -3,9 +3,7 @@
 from datum import Datum, Layout
 from indices import STRING_INDEX, LAYOUT_INDEX, ANSWER_INDEX, UNK
 from parse import parse_tree
-from models.modules import \
-        AttAnswerModule, DetectModule, DenseAnswerModule, ConjModule, \
-        RedetectModule
+from models.modules import *
 
 from collections import defaultdict
 import logging
@@ -38,6 +36,8 @@ def parse_to_layout_helper(parse, internal):
         else:
             if head == "count":
                 mod_head = DenseAnswerModule
+            #elif head == "where":
+            #    mod_head = AttAnswerModuleCopy
             else:
                 mod_head = AttAnswerModule
 
@@ -111,9 +111,21 @@ class CocoQATaskSet:
                     for pred in parse_preds:
                         pred_counter[pred] += 1
             for pred, count in pred_counter.items():
-                if count <= 1:
+                if count <= 5:
                     continue
                 LAYOUT_INDEX.index(pred)
+
+            #word_counter = defaultdict(lambda: 0)
+            #with open(STRING_FILE % set_name) as string_f:
+            #    for sentence in string_f:
+            #        words = ["<s>"] + sentence.strip().split() + ["</s>"]
+            #        for word in words:
+            #            word_counter[word] += 1
+            ##print word_counter
+            #for word, count in word_counter.items():
+            #    if count <= 1:
+            #        continue
+            #    STRING_INDEX.index(word)
 
         with open(STRING_FILE % set_name) as question_f, \
              open(PARSE_FILE % set_name) as parse_f, \
@@ -136,9 +148,17 @@ class CocoQATaskSet:
 
                 answer = ANSWER_INDEX.index(answer)
                 words = [STRING_INDEX.index(w) for w in words]
+                #words = [STRING_INDEX.get_or_else(w, STRING_INDEX[UNK]) for w in words]
                 if len(parse) == 1:
                     parse = parse + ("object",)
+                if parse[0] == "what":
+                    parse = ("what", "object")
+                if parse[0] == "where":
+                    parse = ("where", "WHERE__" + parse[1])
                 layout = parse_to_layout(parse)
+
+                #if parse not in [("color", "shirt"), ("color", "cat")]:
+                #    continue
 
                 #if i == 300:
                 #    continue

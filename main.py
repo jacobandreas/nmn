@@ -52,8 +52,14 @@ def main():
             val_loss, val_acc = batched_iter(
                     task.val, model, config, compute_eval=True)
             visualizer.begin(config_name, 100)
+            query_scores = defaultdict(lambda: 0)
+            query_counts = defaultdict(lambda: 0)
             test_loss, test_acc = batched_iter(
-                    task.test, model, config, compute_eval=True)
+                    task.test, model, config, compute_eval=True,
+                    query_scores=query_scores, query_counts=query_counts)
+            query_accs = {q: 1.0 * query_scores[q] / query_counts[q] for q in
+                    query_scores.keys()}
+            logging.info(query_accs)
             visualizer.end()
             logging.info("%5d  :  %2.4f  %2.4f  %2.4f  :  %2.4f  %2.4f  %2.4f",
                     i_iter, train_loss, val_loss, test_loss, train_acc, val_acc, 
@@ -75,7 +81,8 @@ def stack_indices(indices):
         return indices
 
 @profile
-def batched_iter(data, model, config, train=False, compute_eval=False):
+def batched_iter(data, model, config, train=False, compute_eval=False,
+        query_scores=None, query_counts=None):
     batch_loss = 0.
     batch_acc = 0.
     count = 0
@@ -110,6 +117,7 @@ def batched_iter(data, model, config, train=False, compute_eval=False):
                 channels, width, height = datum_input.shape
                 batch_input[i,:,:width,:height] = datum_input
             batch_output = np.asarray([d.outputs[0] for d in batch_data])
+            raw_queries = [d.raw_query.split(" ") for d in batch_data]
 
             batch_indices = None
             layout_type = None
@@ -123,9 +131,11 @@ def batched_iter(data, model, config, train=False, compute_eval=False):
             strings = [[STRING_INDEX[NULL]] * (max_string_len - len(d.string)) + d.string for d in batch_data]
             strings = np.asarray(strings)
             
-            loss, acc = model.forward(
+            loss = model.forward(
                     layout_type, batch_indices, strings, batch_input, 
-                    batch_output, compute_eval)
+                    batch_output)
+            acc = compute_acc(model.predictions, batch_output, raw_queries, query_scores,
+                    query_counts)
 
             #with open("preds_%s.txt" % train, "a") as rerank_f:
             #    for i in range(len(batch_datum))
@@ -149,6 +159,15 @@ def batched_iter(data, model, config, train=False, compute_eval=False):
         return 0, 0
     return batch_loss / count, batch_acc / count
 
+def compute_acc(data, labels, raw_queries, query_scores, query_counts):
+    preds = np.argmax(data, axis=1)
+    acc = np.mean(preds == labels)
+    if query_scores is not None:
+        for i in range(len(raw_queries)):
+            query_scores[raw_queries[i][0]] += preds[i] == labels[i]
+            query_counts[raw_queries[i][0]] += 1
+    return acc
+
 def simple_iter(data, model, train=False, compute_eval=False):
     batch_loss = 0.
     batch_acc = 0.
@@ -157,7 +176,7 @@ def simple_iter(data, model, train=False, compute_eval=False):
         batch_data = [data[i_datum]]
         batch_input = np.asarray([d.input for d in batch_data])
         batch_output = np.asarray([d.output for d in batch_data])
-        loss, acc = model.forward(query, batch_input, batch_output, compute_eval)
+        loss = model.forward(query, batch_input, batch_output)
         batch_loss += loss
         if compute_eval:
             batch_acc += acc

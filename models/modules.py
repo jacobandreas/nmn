@@ -273,10 +273,13 @@ class AttAnswerModule:
         self.reduction_name = name_prefix + "reduction"
         self.indices_name = name_prefix + "indices"
         self.bias_name = name_prefix + "bias"
-        self.ip_name = name_prefix + "ip"
+        self.ip1_name = name_prefix + "ip1"
+        self.relu_name = name_prefix + "relu1"
+        self.ip2_name = name_prefix + "ip2"
         self.sum_name = name_prefix + "sum"
 
         self.output_name = self.sum_name
+        #self.output_name = self.ip_name
 
     @profile
     def forward(self, indices):
@@ -317,13 +320,39 @@ class AttAnswerModule:
                 bottoms=[self.indices_name]))
 
         self.apollo_net.f(layers.InnerProduct(
-                self.ip_name,
-                len(ANSWER_INDEX),
+                self.ip1_name,
+                64,
+                #len(ANSWER_INDEX),
                 bottoms=[self.reduction_name]))
 
+        self.apollo_net.f(layers.ReLU(self.relu_name, bottoms=[self.ip1_name]))
+        self.apollo_net.f(layers.InnerProduct(
+            self.ip2_name, len(ANSWER_INDEX), bottoms=[self.relu_name]))
+
         self.apollo_net.f(layers.Eltwise(
-                self.sum_name, bottoms=[self.bias_name, self.ip_name],
+                self.sum_name, bottoms=[self.bias_name, self.ip2_name],
                 operation="SUM"))
+
+class AttAnswerModuleCopy(AttAnswerModule):
+    def __init__(self, position, hidden_size, input_name, incoming_names, apollo_net):
+        self.input_name = input_name
+        self.hidden_size = hidden_size
+        assert len(incoming_names) == 1
+        self.incoming_names = incoming_names
+        self.apollo_net = apollo_net
+
+        name_prefix = "AttAnswerCopy_%d__" % position
+        self.hidden_name = name_prefix + "hidden"
+        self.softmax_name = name_prefix + "softmax"
+        self.tile_name = name_prefix + "tile"
+        self.attention_name = name_prefix + "attention"
+        self.reduction_name = name_prefix + "reduction"
+        self.indices_name = name_prefix + "indices"
+        self.bias_name = name_prefix + "bias"
+        self.ip_name = name_prefix + "ip"
+        self.sum_name = name_prefix + "sum"
+
+        self.output_name = self.sum_name
 
 class DataModule:
     def __init__(self, name, apollo_net):
