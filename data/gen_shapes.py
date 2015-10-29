@@ -241,7 +241,27 @@ def evaluate(query, image):
 
   return None
 
+def gen_sent(query):
+  if query in ("red", "green", "blue"):
+    return query + " objects"
+  if query in ("circle", "square", "triangle"):
+    return query + "s"
+  if query[0] == "is":
+    return "are the " + gen_sent(query[1]) + " " + gen_sent(query[2])
+  if query[0] == "shape":
+    return "what shapes are " + gen_sent(query[1])
+  if query[0] == "color":
+    return "what colors are " + gen_sent(query[1])
+  if query[0] in ("left_of", "right_of", "above", "below"):
+    return query[0].replace("_", " ") + " " + gen_sent(query[1])
+
+def gen_sentences(query):
+  generated = gen_sent(query)
+  print generated
+  return [generated] * N_QUERY_INSTS
+
 def gen_images(query):
+  sent = gen_sent(query)
   data = []
   results = set()
   i = 0
@@ -264,7 +284,7 @@ def gen_images(query):
     #  print
     #print "==="
     if result is not None and result != 0:
-      data.append((query, image, result))
+      data.append((sent, query, image, result))
       results.add(result)
 
   if len(data) == N_QUERY_INSTS: # and len(results) > 1:
@@ -273,17 +293,20 @@ def gen_images(query):
     return None
 
 if __name__ == "__main__":
-  with open("../log.yaml") as log_config_f:
-    logging.config.dictConfig(yaml.load(log_config_f))
+  #with open("../log.yaml") as log_config_f:
+  #  logging.config.dictConfig(yaml.load(log_config_f))
 
   seen = set()
   train_data = []
   val_data = []
   test_data = []
 
+  train_text = []
+  val_text = []
+
   # shape, color | circle, square, triangle, red, green, blue
-  #tops = ['shape', 'color'] # , 'size']
-  tops = ['is_red', 'is_green', 'is_blue', 'is_circle', 'is_square', 'is_triangle']
+  tops = ['shape', 'color'] # , 'size']
+  #tops = ['is_red', 'is_green', 'is_blue', 'is_circle', 'is_square', 'is_triangle']
   #tprime = sum([[t, t+"-", t+'--'] for t in tops], [])
   tprime = tops
 
@@ -292,14 +315,21 @@ if __name__ == "__main__":
   mprime = mids
 
   bottoms = ['red', 'green', 'blue', 'circle', 'square', 'triangle'] # big small
+  #bottoms = ["red", "green", "blue"]
   #bprime = sum([[t, t+"-", t+'--'] for t in bottoms], [])
   bprime = bottoms
 
   queries2 = [("is",) + l for l in itertools.product(bprime, bprime)]
   queries3 = list(itertools.product(bprime, mprime, bprime))
   queries3 = [("is", q[0], (q[1], q[2])) for q in queries3]
-
   queries = queries2 + queries3
+
+  #queries2 = [(t, b) for t, b in itertools.product(tprime, bprime)]
+  #queries3 = list(itertools.product(["red", "green", "blue"], ["circle", "square", "triangle"]))
+  #queries3 = [("is", q[0], q[1]) for q in queries3]
+  #queries4 = list(itertools.product(tprime, mprime, bprime))
+  #queries4 = [(q[0], (q[1], q[2])) for q in queries4]
+  #queries = queries2 + queries3 + queries4
 
   np.random.shuffle(queries)
 
@@ -409,17 +439,19 @@ if __name__ == "__main__":
 
   for set_name, set_data in sets.items():
 
-    set_inputs = np.asarray([image.data[:,:,0:3] for query, image, result in set_data])
+    set_inputs = np.asarray([image.data[:,:,0:3] for sent, query, image, result in set_data])
     np.save("shapes/%s.input" % set_name, set_inputs)
     #image_data = image.data
     #image_data = image_data[:,:,0:3].flatten().tolist()
     #print >>input_f, " ".join([str(v) for v in image_data])
 
     with open("shapes/%s.query" % set_name, "w") as query_f, \
-         open("shapes/%s.output" % set_name, "w") as output_f:
+         open("shapes/%s.output" % set_name, "w") as output_f, \
+         open("shapes/%s.txt" % set_name, "w") as string_f:
          #open("shapes/%s.input" % set_name, "w") as input_f, \
-      for query, image, result in set_data:
+      for sent, query, image, result in set_data:
         str_query = pp(query)
+        print >>string_f, sent
         print >>query_f, str_query
         print >>output_f, result
 

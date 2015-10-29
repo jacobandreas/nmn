@@ -165,6 +165,8 @@ class DetectModule:
         self.shared_name = name_prefix + "shared"
         self.sum_name = name_prefix + "sum"
 
+        self.vec_param = "p.Detect__vec"
+
         #self.output_name = self.sum_name
         self.output_name = self.flatten_name
         #self.output_name = self.shared_name
@@ -184,7 +186,8 @@ class DetectModule:
             channels,
             #64,
             len(LAYOUT_INDEX),
-            bottoms=[self.indices_name]))
+            bottoms=[self.indices_name],
+            param_names=[self.vec_param]))
             #weight_filler=layers.Filler("uniform", 0.001)))
 
         #self.apollo_net.f(layers.InnerProduct(
@@ -239,6 +242,35 @@ class RedetectModule:
     def forward(self, indices):
         pass
 
+class CombAnswerModule:
+    def __init__(self, position, incoming_names, apollo_net):
+        self.incoming_names = incoming_names
+        self.apollo_net = apollo_net
+
+        name_prefix = "CombAnswer_%d__" % position
+        self.stack_name = name_prefix + "stack"
+        self.conv_name = name_prefix + "conv"
+        self.relu_name = name_prefix + "relu"
+        self.ip_name = name_prefix + "ip"
+
+        self.output_name = self.ip_name
+
+    @profile
+    def forward(self, indices):
+        #self.apollo_net.f(layers.Eltwise(
+        #    self.min_name, operation="MAX", bottoms=self.incoming_names))
+
+        self.apollo_net.f(layers.Concat(
+            self.stack_name, bottoms=self.incoming_names))
+
+        self.apollo_net.f(layers.Convolution(
+            self.conv_name, (1,1), 1, bottoms=[self.stack_name]))
+
+        self.apollo_net.f(layers.ReLU(
+            self.relu_name, bottoms=[self.conv_name]))
+
+        self.apollo_net.f(layers.InnerProduct(
+            self.ip_name, len(ANSWER_INDEX), bottoms=[self.relu_name]))
 
 class DenseAnswerModule:
     def __init__(self, position, hidden_size, incoming_names, apollo_net):
@@ -321,7 +353,7 @@ class AttAnswerModule:
 
         self.apollo_net.f(layers.InnerProduct(
                 self.ip1_name,
-                64,
+                2,
                 #len(ANSWER_INDEX),
                 bottoms=[self.reduction_name]))
 
@@ -366,6 +398,62 @@ class DataModule:
         else:
             self.apollo_net.blobs[self.output_name].data[:] = data
 
+class ConvImageDataModule:
+    def __init__(self, name, apollo_net):
+        self.apollo_net = apollo_net
+
+        self.data_name = name + "_data"
+        self.conv1_name = name + "_conv1"
+        self.relu1_name = name + "_relu1"
+        self.pool1_name = name + "_pool1"
+        self.conv2_name = name + "_conv2"
+        self.relu2_name = name + "_relu2"
+        self.pool2_name = name + "_pool2"
+
+        self.output_name = self.pool2_name
+
+    @profile
+    def forward(self, data):
+        if self.data_name not in self.apollo_net.blobs.keys():
+            self.apollo_net.f(layers.NumpyData(self.data_name, data=data))
+        else:
+            self.apollo_net.blobs[self.data_name].data[:] = data
+
+        self.apollo_net.f(layers.Convolution(
+            self.conv1_name, (5,5), 8, 
+            pad_h=2,
+            pad_w=2,
+            bottoms=[self.data_name]))
+
+        self.apollo_net.f(layers.ReLU(
+            self.relu1_name, bottoms=[self.conv1_name]))
+
+        self.apollo_net.f(layers.Pooling(
+            self.pool1_name, 
+            kernel_h=5,
+            kernel_w=5,
+            stride_w=5,
+            stride_h=5,
+            bottoms=[self.relu1_name]))
+
+        self.apollo_net.f(layers.Convolution(
+            self.conv2_name, (3,3), 8, 
+            pad_h=1,
+            pad_w=1,
+            bottoms=[self.pool1_name]))
+
+
+        self.apollo_net.f(layers.ReLU(
+            self.relu2_name, bottoms=[self.conv2_name]))
+
+        self.apollo_net.f(layers.Pooling(
+            self.pool2_name, 
+            kernel_h=2,
+            kernel_w=2,
+            stride_w=2,
+            stride_h=2,
+            bottoms=[self.relu2_name]))
+
 class ImageDataModule:
     def __init__(self, name, apollo_net, proj_size=None):
         self.apollo_net = apollo_net
@@ -388,6 +476,8 @@ class ImageDataModule:
             self.apollo_net.f(layers.NumpyData(self.data_name, data=data))
         else:
             self.apollo_net.blobs[self.data_name].data[:] = data
+
+
         if self.proj_size is not None:
             self.apollo_net.f(layers.Convolution(
                 self.proj_name, (1,1), self.proj_size,

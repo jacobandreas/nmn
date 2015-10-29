@@ -147,7 +147,7 @@ def batched_iter(data, model, config, train=False, compute_eval=False,
             #        for k in range(KBEST):
             #            print >>rerank_f, ANSWER_INDEX.get(preds[k]), pweights[k],
 
-            vis(model, batch_data, batch_output, first_input)
+            #vis(model, batch_data, batch_output, first_input)
 
             batch_loss += loss
             if compute_eval:

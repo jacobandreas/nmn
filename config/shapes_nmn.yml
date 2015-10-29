@@ -1,0 +1,26 @@
+task:
+  name: shapes
+  pad_to_width: 30
+  pad_to_height: 30
+
+model:
+  name: nmn
+  include_reading_module: false
+  image_conv: true
+  #load_lstm: saves_old/cocoqa_lstm_10.caffemodel
+  #train_lstm: true
+  #hidden_size: 500
+  #image_features: 64
+
+  # for best color results:
+  # image_features: 32
+
+opt:
+  batch_size: 256
+  batch_by: layout
+  iters: 1000
+
+  rho: 0.95
+  epsilon: 0.00001
+  clip: 10
+  lr: 0.1

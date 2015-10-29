@@ -195,10 +195,11 @@ class NMNModel:
             return module(
                 position, incoming_names, self.apollo_net)
         elif module == modules.RedetectModule:
-            assert False
             assert len(incoming_names) == 1
             return module(
                 position, incoming_names[0], self.apollo_net)
+        elif module == modules.CombAnswerModule:
+            return module(position, incoming_names, self.apollo_net)
         else:
             raise NotImplementedError("Don't know how to make a %s" % module.__class__.__name__)
 
@@ -206,6 +207,8 @@ class NMNModel:
         if hasattr(self.config, "image_features"):
             return modules.ImageDataModule(
                 "Input", self.apollo_net, proj_size=self.config.image_features)
+        elif hasattr(self.config, "image_conv") and self.config.image_conv:
+            return modules.ConvImageDataModule("Input", self.apollo_net)
         else:
             return modules.ImageDataModule("Input", self.apollo_net)
 
