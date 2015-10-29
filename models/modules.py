@@ -166,6 +166,8 @@ class DetectModule:
         self.sum_name = name_prefix + "sum"
 
         self.vec_param = "p.Detect__vec"
+        self.flatten_param0 = "p.Detect__flatten.0"
+        self.flatten_param1 = "p.Detect__flatten.1"
 
         #self.output_name = self.sum_name
         self.output_name = self.flatten_name
@@ -202,10 +204,11 @@ class DetectModule:
             #bottoms=[self.input_name, self.proj_vector_relu_name]))
 
         self.apollo_net.f(layers.Convolution(self.flatten_name, (1,1), 1,
-            bottoms=[self.scalar_name]))
-            #weight_filler=layers.Filler("constant", 1), 
-            #bias_filler=layers.Filler("constant", 0.0),
-            #param_lr_mults=[0.0, 0.0]))
+            bottoms=[self.scalar_name],
+            #param_names=[self.flatten_param0, self.flatten_param1]))
+            weight_filler=layers.Filler("constant", 1), 
+            bias_filler=layers.Filler("constant", 0.0),
+            param_lr_mults=[0.0, 0.0]))
 
         #self.apollo_net.f(layers.Convolution(self.shared_name, (1,1), 1,
         #    bottoms=[self.input_name],
@@ -253,6 +256,11 @@ class CombAnswerModule:
         self.relu_name = name_prefix + "relu"
         self.ip_name = name_prefix + "ip"
 
+        self.conv_param0 = "p.CombAnswer__conv.0"
+        self.conv_param1 = "p.CombAnswer__conv.1"
+        self.ip_param0 = "p.CombAnswer__ip.0"
+        self.ip_param1 = "p.CombAnswer__ip.1"
+
         self.output_name = self.ip_name
 
     @profile
@@ -264,13 +272,15 @@ class CombAnswerModule:
             self.stack_name, bottoms=self.incoming_names))
 
         self.apollo_net.f(layers.Convolution(
-            self.conv_name, (1,1), 1, bottoms=[self.stack_name]))
+            self.conv_name, (1,1), 1, bottoms=[self.stack_name],
+            param_names=[self.conv_param0, self.conv_param1]))
 
         self.apollo_net.f(layers.ReLU(
             self.relu_name, bottoms=[self.conv_name]))
 
         self.apollo_net.f(layers.InnerProduct(
-            self.ip_name, len(ANSWER_INDEX), bottoms=[self.relu_name]))
+            self.ip_name, len(ANSWER_INDEX), bottoms=[self.relu_name],
+            param_names=[self.ip_param0, self.ip_param1]))
 
 class DenseAnswerModule:
     def __init__(self, position, hidden_size, incoming_names, apollo_net):
@@ -398,10 +408,12 @@ class DataModule:
         else:
             self.apollo_net.blobs[self.output_name].data[:] = data
 
-class ConvImageDataModule:
-    def __init__(self, name, apollo_net):
+class DeepDetectModule:
+    def __init__(self, position, input_name, apollo_net):
+        self.input_name = input_name
         self.apollo_net = apollo_net
 
+        name_prefix = "DeepDetect_%d__" % position
         self.data_name = name + "_data"
         self.conv1_name = name + "_conv1"
         self.relu1_name = name + "_relu1"
@@ -409,6 +421,11 @@ class ConvImageDataModule:
         self.conv2_name = name + "_conv2"
         self.relu2_name = name + "_relu2"
         self.pool2_name = name + "_pool2"
+
+        self.conv1_param0 = "p.DeepDetect__conv1.0"
+        self.conv1_param1 = "p.DeepDetect__conv1.1"
+        self.conv2_param0 = "p.DeepDetect__conv2.0"
+        self.conv2_param1 = "p.DeepDetect__conv2.1"
 
         self.output_name = self.pool2_name
 
@@ -423,7 +440,8 @@ class ConvImageDataModule:
             self.conv1_name, (5,5), 8, 
             pad_h=2,
             pad_w=2,
-            bottoms=[self.data_name]))
+            bottoms=[self.data_name],
+            param_names=[self.conv1_param0, self.conv1_param1))
 
         self.apollo_net.f(layers.ReLU(
             self.relu1_name, bottoms=[self.conv1_name]))
@@ -440,8 +458,8 @@ class ConvImageDataModule:
             self.conv2_name, (3,3), 8, 
             pad_h=1,
             pad_w=1,
-            bottoms=[self.pool1_name]))
-
+            bottoms=[self.pool1_name],
+            params=[self.conv2_param0, self.conv2_param1]))
 
         self.apollo_net.f(layers.ReLU(
             self.relu2_name, bottoms=[self.conv2_name]))
