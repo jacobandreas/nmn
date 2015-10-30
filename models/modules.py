@@ -248,14 +248,19 @@ class DenseAnswerModule:
         self.apollo_net = apollo_net
 
         name_prefix = "DenseAnswer_%d__" % position
-        self.ip_name = name_prefix + "ip"
+        self.ip1_name = name_prefix + "ip1"
+        self.relu1_name = name_prefix + "relu1"
+        self.ip2_name = name_prefix + "ip2"
 
-        self.output_name = self.ip_name
+        self.output_name = self.ip2_name
 
     @profile
     def forward(self, indices):
         self.apollo_net.f(layers.InnerProduct(
-            self.ip_name, len(ANSWER_INDEX), bottoms=[self.incoming_name]))
+            self.ip1_name, 64, bottoms=[self.incoming_name]))
+        self.apollo_net.f(layers.ReLU(self.relu1_name, bottoms=[self.ip1_name]))
+        self.apollo_net.f(layers.InnerProduct(
+            self.ip2_name, len(ANSWER_INDEX), bottoms=[self.relu1_name]))
 
 class AttAnswerModule:
     def __init__(self, position, hidden_size, input_name, incoming_names, apollo_net):
