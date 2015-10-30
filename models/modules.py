@@ -181,22 +181,22 @@ class DetectModule:
         self.apollo_net.f(layers.Wordvec(
             self.vector_name, 
             #self.hidden_size, 
-            channels,
-            #64,
+            #channels,
+            64,
             len(LAYOUT_INDEX),
             bottoms=[self.indices_name]))
             #weight_filler=layers.Filler("uniform", 0.001)))
 
-        #self.apollo_net.f(layers.InnerProduct(
-        #    self.proj_vector_name, channels, bottoms=[self.vector_name]))
+        self.apollo_net.f(layers.InnerProduct(
+            self.proj_vector_name, channels, bottoms=[self.vector_name]))
 
-        #self.apollo_net.f(layers.ReLU(
-        #    self.proj_vector_relu_name, bottoms=[self.proj_vector_name]))
+        self.apollo_net.f(layers.ReLU(
+            self.proj_vector_relu_name, bottoms=[self.proj_vector_name]))
 
         self.apollo_net.f(layers.Scalar(self.scalar_name, 0,
             #bottoms=[self.hidden_name, self.vector_name]))
-            bottoms=[self.input_name, self.vector_name]))
-            #bottoms=[self.input_name, self.proj_vector_relu_name]))
+            #bottoms=[self.input_name, self.vector_name]))
+            bottoms=[self.input_name, self.proj_vector_relu_name]))
 
         self.apollo_net.f(layers.Convolution(self.flatten_name, (1,1), 1,
             bottoms=[self.scalar_name]))
