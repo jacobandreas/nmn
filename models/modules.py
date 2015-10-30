@@ -182,7 +182,7 @@ class DetectModule:
             self.vector_name, 
             #self.hidden_size, 
             #channels,
-            64,
+            32,
             len(LAYOUT_INDEX),
             bottoms=[self.indices_name]))
             #weight_filler=layers.Filler("uniform", 0.001)))
