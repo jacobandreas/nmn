@@ -35,7 +35,8 @@ def parse_to_layout_helper(parse, internal):
                 mod_head = RedetectModule
         else:
             if head == "count":
-                mod_head = DenseAnswerModule
+                #mod_head = DenseAnswerModule
+                mod_head = AttAnswerModule
             #elif head == "where":
             #    mod_head = AttAnswerModuleCopy
             else:
