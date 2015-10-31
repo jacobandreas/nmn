@@ -151,10 +151,20 @@ class CocoQATaskSet:
                 #words = [STRING_INDEX.get_or_else(w, STRING_INDEX[UNK]) for w in words]
                 if len(parse) == 1:
                     parse = parse + ("object",)
+                #if parse[0] == "what":
+                #    parse = ("what", "object")
+                #if parse[0] == "where":
+                #    parse = ("where", "WHERE__" + parse[1])
+
                 if parse[0] == "what":
-                    parse = ("what", "object")
+                    parse = ("what", "what_object")
                 if parse[0] == "where":
-                    parse = ("where", "WHERE__" + parse[1])
+                    parse = ("where", "where_object")
+                if parse[0] == "color":
+                    parse = ("color", "color_object")
+                if parse[0] == "count":
+                    parse = ("count", "count_object")
+
                 layout = parse_to_layout(parse)
 
                 #if parse not in [("color", "shirt"), ("color", "cat")]:
