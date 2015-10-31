@@ -58,6 +58,8 @@ class LSTMModule:
         self.relu_name = "LSTM__relu"
         self.sum_name = "LSTM__sum"
 
+        self.model_hidden_name = "LSTM__model_hidden"
+        self.model_relu_name = "LSTM__model_relu"
         self.model_weight_name = "LSTM__model_weight"
         self.model_softmax_name = "LSTM__model_softmax"
         self.model_scalar_name = "LSTM__model_scalar"
@@ -121,7 +123,12 @@ class LSTMModule:
             param_lr_mults=[self.param_mult] * 2))
 
         net.f(layers.InnerProduct(
-            self.model_weight_name, 2, bottoms=[hidden_name]))
+            self.model_hidden_name, 64, bottoms=[hidden_name]))
+
+        net.f(layers.ReLU(self.model_relu_name, bottoms=[self.model_hidden_name]))
+
+        net.f(layers.InnerProduct(
+            self.model_weight_name, 2, bottoms=[self.model_relu_name]))
 
         net.f(layers.Softmax(self.model_softmax_name,
             bottoms=[self.model_weight_name]))
