@@ -62,6 +62,7 @@ class LSTMModule:
         self.model_softmax_name = "LSTM__model_softmax"
         self.model_scalar_name = "LSTM__model_scalar"
         self.stack_name = "LSTM__stack"
+        self.dropout_name = "LSTM__dropout"
         self.ip1_name = "LSTM__ip1"
         self.relu_name = "LSTM__relu"
         self.ip2_name = "LSTM__ip2"
@@ -137,8 +138,10 @@ class LSTMModule:
         net.f(layers.Concat(self.stack_name, bottoms=[hidden_name,
             self.incoming_name]))
 
+        net.f(layers.Dropout(self.dropout_name, 0.5, bottoms=[self.stack_name]))
+
         net.f(layers.InnerProduct(self.ip1_name, 256,
-            bottoms=[self.stack_name]))
+            bottoms=[self.dropout_name]))
 
         net.f(layers.ReLU(self.relu_name, bottoms=[self.ip1_name]))
         net.f(layers.InnerProduct(self.ip2_name, len(ANSWER_INDEX), bottoms=[self.relu_name]))
