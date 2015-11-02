@@ -62,11 +62,15 @@ class LSTMModule:
         self.model_softmax_name = "LSTM__model_softmax"
         self.model_scalar_name = "LSTM__model_scalar"
         self.stack_name = "LSTM__stack"
-        self.mixing_name = "LSTM__mixing"
+        self.ip1_name = "LSTM__ip1"
+        self.relu_name = "LSTM__relu"
+        self.ip2_name = "LSTM__ip2"
+        #self.mixing_name = "LSTM__mixing"
 
         #self.output_name = self.relu_name
         #self.output_name = self.sum_name
-        self.output_name = self.mixing_name
+        #self.output_name = self.mixing_name
+        self.output_name = self.ip2_name
 
         self.wordvec_param_name = "LSTM__wordvec_param"
         self.input_value_param_name = "LSTM__input_value_param"
@@ -120,26 +124,32 @@ class LSTMModule:
             self.ip_name, len(ANSWER_INDEX), bottoms=[hidden_name],
             param_lr_mults=[self.param_mult] * 2))
 
-        net.f(layers.InnerProduct(
-            self.model_weight_name, 2, bottoms=[hidden_name]))
+        #net.f(layers.InnerProduct(
+        #    self.model_weight_name, 2, bottoms=[hidden_name]))
 
-        net.f(layers.Softmax(self.model_softmax_name,
-            bottoms=[self.model_weight_name]))
+        #net.f(layers.Softmax(self.model_softmax_name,
+        #    bottoms=[self.model_weight_name]))
 
-        batch_size = self.apollo_net.blobs[self.ip_name].shape[0]
-        self.apollo_net.blobs[self.ip_name].reshape((batch_size, 1, len(ANSWER_INDEX), 1))
-        self.apollo_net.blobs[self.incoming_name].reshape((batch_size, 1, len(ANSWER_INDEX), 1))
+        #batch_size = self.apollo_net.blobs[self.ip_name].shape[0]
+        #self.apollo_net.blobs[self.ip_name].reshape((batch_size, 1, len(ANSWER_INDEX), 1))
+        #self.apollo_net.blobs[self.incoming_name].reshape((batch_size, 1, len(ANSWER_INDEX), 1))
 
-        net.f(layers.Concat(self.stack_name, bottoms=[self.ip_name,
+        net.f(layers.Concat(self.stack_name, bottoms=[hidden_name,
             self.incoming_name]))
 
-        net.f(layers.Scalar(self.model_scalar_name, 0, bottoms=[self.stack_name,
-            self.model_softmax_name]))
+        net.f(layers.InnerProduct(self.ip1_name, 256,
+            bottoms=[self.stack_name]))
 
-        net.f(layers.Convolution(self.mixing_name, (1,1), 1,
-            bottoms=[self.model_scalar_name]))
+        net.f(layers.ReLU(self.relu_name, bottoms=[self.ip1_name]))
+        net.f(layers.InnerProduct(self.ip2_name, len(ANSWER_INDEX), bottoms=[self.relu_name]))
 
-        self.apollo_net.blobs[self.mixing_name].reshape((batch_size, len(ANSWER_INDEX)))
+        #net.f(layers.Scalar(self.model_scalar_name, 0, bottoms=[self.stack_name,
+        #    self.model_softmax_name]))
+
+        #net.f(layers.Convolution(self.mixing_name, (1,1), 1,
+        #    bottoms=[self.model_scalar_name]))
+
+        #self.apollo_net.blobs[self.mixing_name].reshape((batch_size, len(ANSWER_INDEX)))
 
         #net.f(layers.ReLU(self.relu_name, bottoms=[self.ip_name]))
 
@@ -271,15 +281,16 @@ class AttAnswerModule:
         self.tile_name = name_prefix + "tile"
         self.attention_name = name_prefix + "attention"
         self.reduction_name = name_prefix + "reduction"
-        self.indices_name = name_prefix + "indices"
-        self.bias_name = name_prefix + "bias"
-        self.ip1_name = name_prefix + "ip1"
-        self.relu_name = name_prefix + "relu1"
-        self.ip2_name = name_prefix + "ip2"
-        self.sum_name = name_prefix + "sum"
+        #self.indices_name = name_prefix + "indices"
+        #self.bias_name = name_prefix + "bias"
+        #self.ip1_name = name_prefix + "ip1"
+        #self.relu_name = name_prefix + "relu1"
+        #self.ip2_name = name_prefix + "ip2"
+        #self.sum_name = name_prefix + "sum"
 
-        self.output_name = self.sum_name
+        #self.output_name = self.sum_name
         #self.output_name = self.ip_name
+        self.output_name = self.reduction_name
 
     @profile
     def forward(self, indices):
@@ -313,25 +324,29 @@ class AttAnswerModule:
         self.apollo_net.f(layers.Reduction(
             self.reduction_name, axis=2, bottoms=[self.attention_name]))
 
-        self.apollo_net.f(layers.NumpyData(self.indices_name, indices))
+        #self.apollo_net.f(layers.NumpyData(self.indices_name, indices))
 
-        self.apollo_net.f(layers.Wordvec(
-                self.bias_name, len(ANSWER_INDEX), len(LAYOUT_INDEX),
-                bottoms=[self.indices_name]))
+        #self.apollo_net.f(layers.Wordvec(
+        #        self.bias_name, 
+        #        #len(ANSWER_INDEX), 
+        #        64,
+        #        len(LAYOUT_INDEX),
+        #        bottoms=[self.indices_name]))
 
-        self.apollo_net.f(layers.InnerProduct(
-                self.ip1_name,
-                64,
-                #len(ANSWER_INDEX),
-                bottoms=[self.reduction_name]))
+        #self.apollo_net.f(layers.InnerProduct(
+        #        self.ip1_name,
+        #        64,
+        #        #len(ANSWER_INDEX),
+        #        bottoms=[self.reduction_name]))
 
-        self.apollo_net.f(layers.ReLU(self.relu_name, bottoms=[self.ip1_name]))
-        self.apollo_net.f(layers.InnerProduct(
-            self.ip2_name, len(ANSWER_INDEX), bottoms=[self.relu_name]))
+        ##self.apollo_net.f(layers.InnerProduct(
+        ##    self.ip2_name, len(ANSWER_INDEX), bottoms=[self.relu_name]))
 
-        self.apollo_net.f(layers.Eltwise(
-                self.sum_name, bottoms=[self.bias_name, self.ip2_name],
-                operation="SUM"))
+        #self.apollo_net.f(layers.Eltwise(
+        #        self.sum_name, bottoms=[self.bias_name, self.ip2_name],
+        #        operation="SUM"))
+
+        #self.apollo_net.f(layers.ReLU(self.relu_name, bottoms=[self.ip1_name]))
 
 class AttAnswerModuleCopy(AttAnswerModule):
     def __init__(self, position, hidden_size, input_name, incoming_names, apollo_net):
