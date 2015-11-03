@@ -115,17 +115,17 @@ class CocoQATaskSet:
                     continue
                 LAYOUT_INDEX.index(pred)
 
-            #word_counter = defaultdict(lambda: 0)
-            #with open(STRING_FILE % set_name) as string_f:
-            #    for sentence in string_f:
-            #        words = ["<s>"] + sentence.strip().split() + ["</s>"]
-            #        for word in words:
-            #            word_counter[word] += 1
-            ##print word_counter
-            #for word, count in word_counter.items():
-            #    if count <= 1:
-            #        continue
-            #    STRING_INDEX.index(word)
+            word_counter = defaultdict(lambda: 0)
+            with open(STRING_FILE % set_name) as string_f:
+                for sentence in string_f:
+                    words = ["<s>"] + sentence.strip().split() + ["</s>"]
+                    for word in words:
+                        word_counter[word] += 1
+            #print word_counter
+            for word, count in word_counter.items():
+                if count <= 1:
+                    continue
+                STRING_INDEX.index(word)
 
         with open(STRING_FILE % set_name) as question_f, \
              open(PARSE_FILE % set_name) as parse_f, \
@@ -147,8 +147,8 @@ class CocoQATaskSet:
                 parse = parse_tree(parse_str)
 
                 answer = ANSWER_INDEX.index(answer)
-                words = [STRING_INDEX.index(w) for w in words]
-                #words = [STRING_INDEX.get_or_else(w, STRING_INDEX[UNK]) for w in words]
+                #words = [STRING_INDEX.index(w) for w in words]
+                words = [STRING_INDEX.get_or_else(w, STRING_INDEX[UNK]) for w in words]
                 if len(parse) == 1:
                     parse = parse + ("object",)
                 if parse[0] == "what":

@@ -16,30 +16,46 @@ class BOWModule:
         self.incoming_name = incoming_name
         self.apollo_net = apollo_net
         
-        self.word_name = "BOW__word_%d"
-        self.wordvec_name = "BOW__wordvec_%d"
+        #self.word_name = "BOW__word_%d"
+        #self.wordvec_name = "BOW__wordvec_%d"
+        self.data_name = "BOW__data"
+        self.ip_name = "BOW__ip"
         self.sum_name = "BOW__sum"
 
-        self.wordvec_param_name = "BOW__wordvec_param"
+        #self.wordvec_param_name = "BOW__wordvec_param"
 
         self.output_name = self.sum_name
 
     def forward(self, tokens):
         net = self.apollo_net
+        IUNK = STRING_INDEX[UNK]
+        INULL = STRING_INDEX[NULL]
 
-        for t in range(tokens.shape[1]):
-            word_name = self.word_name % t
-            wordvec_name = self.wordvec_name % t
-            
-            net.f(layers.NumpyData(word_name, np.asarray(tokens[:,t])))
-            net.f(layers.Wordvec(
-                wordvec_name, len(ANSWER_INDEX), len(STRING_INDEX),
-                bottoms=[word_name], param_names=[self.wordvec_param_name]))
+        #for t in range(tokens.shape[1]):
+        #    word_name = self.word_name % t
+        #    wordvec_name = self.wordvec_name % t
+        #    
+        #    net.f(layers.NumpyData(word_name, np.asarray(tokens[:,t])))
+        #    net.f(layers.Wordvec(
+        #        wordvec_name, len(ANSWER_INDEX), len(STRING_INDEX),
+        #        bottoms=[word_name], param_names=[self.wordvec_param_name]))
+        indices = np.zeros((tokens.shape[0], len(STRING_INDEX)))
+        for i in range(tokens.shape[0]):
+            for j in range(tokens.shape[1]):
+                t = tokens[i,j]
+                if t != IUNK and t != INULL:
+                    indices[i,t] += 1
 
-        word_bottoms = [self.wordvec_name % t for t in range(tokens.shape[1])]
-        bottoms = word_bottoms + [self.incoming_name]
+        #word_bottoms = [self.wordvec_name % t for t in range(tokens.shape[1])]
+        #bottoms = word_bottoms + [self.incoming_name]
 
-        net.f(layers.Eltwise(self.sum_name, bottoms=bottoms, operation="SUM"))
+        net.f(layers.Data(self.data_name, indices))
+        net.f(layers.InnerProduct(
+            self.ip_name, len(ANSWER_INDEX), bottoms=[self.data_name]))
+
+        net.f(layers.Eltwise(
+            self.sum_name, bottoms=[self.data_name, self.ip_name], 
+            operation="SUM"))
 
 class LSTMModule:
     def __init__(self, hidden_size, incoming_name, keep_training, apollo_net):
