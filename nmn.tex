@@ -80,11 +80,28 @@ First line of institution2 address\\
 
 %%%%%%%%% ABSTRACT
 \begin{abstract}
-Answering a question about an image, is a challenging task which requires understanding the question, grounding it in the image and jointly reasoning about the image content to produce a correct answer. Intuitively, this task is compositional in nature, \ie answering \emph{where the dog} in an image is can partially share an representation with \emph{which color the dog} is or \emph{where the cat} is. On the other hand, learning deep neural networks has shown impressive progress in question answering and related tasks. Consequently, we propose \emph{\nmn}, which composes several, jointly trained neural modules to answer questions about images. Specifically our approaches decomposes questions into their linguistic substructures and instantiates corresponding neural ``modules'' (\eg \emph{where, which color, dog}) which are stacked to a deep network. The resulting compound
-  networks are then jointly trained, whose composable neural ``modules'' 
-  can be dynamically remixed to interpret also novel questions. We evaluate our approach
-  on three challenging datasets for visual question answering, achieving
-   overall state-of-the-art performance, but outperforming related work for more complex questions.
+  Visual question answering differs from many other vision tasks in that the
+  computational structure necessary to produce an answer is not fixed, but
+  instead varies depending on the question. At the same time, the task is
+  fundamentally compositional in nature---answering a question like \emph{where
+  is the dog?} shares substructure with questions like \emph{what color is the
+  dog?} and \emph{where is the cat?}. We wish to simultaneously exploit the
+  representational capacity of deep networks and the dynamic compositional
+  structure of questions. XXX
+  In this paper, we describe a procedure for constructing and learning
+  \emph{neural module networks}, which compose collections of jointly-trained
+  neural ``modules'' into deep networks for question answering. Our approach
+  decomposes questions into their linguistic substructures, and uses these
+  structures to dynamically instantiate modular networks (with reusable
+  components for recognizing dogs, classifying colors, etc.). The resulting
+  compound networks are jointly trained. We evaluate our approach on three
+  challenging datasets for visual question answering, achieving several
+  state-of-the-art results.
+%Answering a question about an image, is a challenging task which requires understanding the question, grounding it in the image and jointly reasoning about the image content to produce a correct answer. Intuitively, this task is compositional in nature, \ie answering \emph{where the dog} in an image is can partially share an representation with \emph{which color the dog} is or \emph{where the cat} is. On the other hand, learning deep neural networks has shown impressive progress in question answering and related tasks. Consequently, we propose \emph{\nmn}, which composes several, jointly trained neural modules to answer questions about images. Specifically our approaches decomposes questions into their linguistic substructures and instantiates corresponding neural ``modules'' (\eg \emph{where, which color, dog}) which are stacked to a deep network. The resulting compound
+%  networks are then jointly trained, whose composable neural ``modules'' 
+%  can be dynamically remixed to interpret also novel questions. We evaluate our approach
+%  on three challenging datasets for visual question answering, achieving
+%   overall state-of-the-art performance, but outperforming related work for more complex questions.
 \end{abstract}
 
 \input{intro}
@@ -136,13 +153,25 @@ questions with novel structure like---e.g.\ {\it is there a black
 dog?}---without any additional training data.
 
 Note in particular that we expect these modules to differ not only in their
-parameters, but more fundamentally in their topologies. Intuitively, \mod{detect[cat]}
-should take an image as input, perform some fully-convolutional operation, and
-output an attention (understood as a distribution over positions in the image),
-while {\small\tt classify[color]} should take both the input image and such an attention, and map to a
-distribution over labels. Some computations require convolutional operations, some require fully-connected operations, and some (like counting) may require recurrent network structures. We should not expect that we will be able to use the same network layout for every problem, but do expect that parts of these networks may be reused in different orders.
+parameters, but more fundamentally in their topologies. Intuitively,
+\mod{detect[cat]} should take an image as input, perform some
+fully-convolutional operation, and output an attention (understood as a
+distribution over positions in the image), while {\small\tt classify[color]}
+should take both the input image and such an attention, and map to a
+distribution over labels. Some computations require convolutional operations,
+some require fully-connected operations, and some (like counting) may require
+recurrent network structures. We should not expect that we will be able to use
+the same network layout for every problem, but do expect that parts of these
+networks may be reused in different orders.
 
-Thus our goal in this paper is to specify a framework for modular, composable, jointly-trained neural networks. In this framework, we first predict the structure of the computation needed to answer each question individually, then realize this structure by constructing an appropriately-shaped neural network from an inventory of reusable modules. These modules are learned jointly, rather than trained in isolation, and specialization to individual tasks (identifying properties, spatial relations, etc.) arises naturally from the training objective.
+Thus our goal in this paper is to specify a framework for modular, composable,
+jointly-trained neural networks. In this framework, we first predict the
+structure of the computation needed to answer each question individually, then
+realize this structure by constructing an appropriately-shaped neural network
+from an inventory of reusable modules. These modules are learned jointly, rather
+than trained in isolation, and specialization to individual tasks (identifying
+properties, spatial relations, etc.) arises naturally from the training
+objective.
 
 \input{related}
 
@@ -213,29 +242,57 @@ in this paper.\\
 
 \paragraph{Attend}
 
-An attention module \mod{attend[$x$]} convolves every position in the input image with a weight vector (distinct for each $x$) to produce a heatmap or unnormalized attention. So, for example, the output of the module {\small\tt attend[dog]} is a matrix whose entries should be in regions of the image containing cats, and small everywhere else, as shown below.\\[1em]
+An attention module \mod{attend[$x$]} convolves every position in the input
+image with a weight vector (distinct for each $x$) to produce a heatmap or
+unnormalized attention. So, for example, the output of the module {\small\tt
+attend[dog]} is a matrix whose entries should be in regions of the image
+containing cats, and small everywhere else, as shown below.\\[1em]
 \includegraphics[width=\columnwidth]{fig/attend}
 
 \paragraph{Re-attend}
 
-A re-attention module \mod{re-attend[$x$]} performs a fully-connected mapping from one attention to another. Again, the weights for this mapping are distinct for each $x$. So \mod{re-attend[above]} should take an attention and shift the regions of greatest activation upward (as below), while \mod{re-attend[not]} should move attention away from the active regions.\\[1em]
+A re-attention module \mod{re-attend[$x$]} performs a fully-connected mapping
+from one attention to another. Again, the weights for this mapping are distinct
+for each $x$. So \mod{re-attend[above]} should take an attention and shift the
+regions of greatest activation upward (as below), while \mod{re-attend[not]}
+should move attention away from the active regions.\\[1em]
 \includegraphics[width=\columnwidth]{fig/re-attend}
 
 \paragraph{Combine}
 
-A combination module \mod{combine[$x$]} merges two attentions into a single attention. For example, {\small\tt combine[and]} should be active only in the regions that are active in both inputs, while {\small\tt{combine[except]}} should be active where the first input is active and the second is inactive.\\[1em]
-\includegraphics[width=\columnwidth]{fig/combine}
+A combination module \mod{combine[$x$]} merges two attentions into a single
+attention. For example, {\small\tt combine[and]} should be active only in the
+regions that are active in both inputs, while {\small\tt{combine[except]}}
+should be active where the first input is active and the second is
+inactive.\\[1em] \includegraphics[width=\columnwidth]{fig/combine}
 
 \paragraph{Classify}
 
-A classification module \mod{classify[$x$]} takes an attention and the input image and maps them to a distribution over labels. For example, {\small\tt classify[color]} should return a distribution over colors for the region attended to.\\[1em]
-\includegraphics[width=\columnwidth]{fig/classify}
+A classification module \mod{classify[$x$]} takes an attention and the input
+image and maps them to a distribution over labels. For example, {\small\tt
+classify[color]} should return a distribution over colors for the region
+attended to.\\[1em] \includegraphics[width=\columnwidth]{fig/classify}
 
 \subsection{Networks}
 
-Given the mapping from queries to network structures described above, we have for each training example a network structure, an input image, and an output label. In many cases, these network structures are different, but have tied parameters. Networks which have the same high-level structure but different instantiations of individual modules (for example \emph{what color is the cat}---{\small\tt classify[color](detect[cat])} and \emph{where is the truck}---{\small\tt classify[where](detect[truck])}) can be processed in the same batch, resulting in efficient computation. [should I say more about this?]
+Given the mapping from queries to network structures described above, we have
+for each training example a network structure, an input image, and an output
+label. In many cases, these network structures are different, but have tied
+parameters. Networks which have the same high-level structure but different
+instantiations of individual modules (for example \emph{what color is the
+cat}---{\small\tt classify[color](detect[cat])} and \emph{where is the
+truck}---{\small\tt classify[where](detect[truck])}) can be processed in the
+same batch, resulting in efficient computation. [should I say more about this?]
 
-It is important to emphasize that the labels we have assigned to distinguish instances of the same module type---\mod{cat}, \mod{and}, etc.---are a notational convenience, and do not reflect any manual specification of the behavior of the corresponding modules. \mod{detect[cat]} doesn't know it's supposed to be a cat detector, and \mod{combine[and]} doesn't know it's supposed to compute intersections of attentions. Instead, they acquire these semantics as a byproduct of the end-to-end training procedure. The image--answer pairs, coupled with the parameter tying scheme, are enough to ensure that each module specializes in an appropriate way.
+It is important to emphasize that the labels we have assigned to distinguish
+instances of the same module type---\mod{cat}, \mod{and}, etc.---are a
+notational convenience, and do not reflect any manual specification of the
+behavior of the corresponding modules. \mod{detect[cat]} doesn't know it's
+supposed to be a cat detector, and \mod{combine[and]} doesn't know it's supposed
+to compute intersections of attentions. Instead, they acquire these semantics as
+a byproduct of the end-to-end training procedure. As can be seen in Figure XXX,
+the image--answer pairs and parameter tying together encourage each module to
+specialize in the appropriate way.
 
 \begin{figure*}
     \includegraphics[width=\textwidth]{fig/full2}
@@ -245,9 +302,16 @@ It is important to emphasize that the labels we have assigned to distinguish ins
 
 \section{Learning}
 
-Our training objective is simply to find module parameters maximizing the likelihood of the data. By design, the last module in every network is a {\small\tt classify}, and so each assembled network represents a probability distribution.
+Our training objective is simply to find module parameters maximizing the
+likelihood of the data. By design, the last module in every network is a
+{\small\tt classify}, and so each assembled network represents a probability
+distribution.
 
-Because of the dynamic network structures used to answer questions, some weights are updated much more frequently than others. For this reason we found that learning algorithms with adaptive per-weight learning rates performed substantially better than simple gradient descent. All the experiments described below use AdaDelta (thus there was no hyperparameter search over step sizes).
+Because of the dynamic network structures used to answer questions, some weights
+are updated much more frequently than others. For this reason we found that
+learning algorithms with adaptive per-weight learning rates performed
+substantially better than simple gradient descent. All the experiments described
+below use AdaDelta (thus there was no hyperparameter search over step sizes).
 
 %---a simple feedforward
 %convolutional network is suitable for most detection and classification tasks,
@@ -289,9 +353,22 @@ Because of the dynamic network structures used to answer questions, some weights
 
 \section{Experiments: compositionality}
 
-Past work [Ren paper] has achieved state-of-the-art results on the CocoQA dataset using a bag-of-words model . This is consistent with [VQA paper]'s observation that image features are most important for simple object- and activity-recognition questions, and that they make little difference for other categories (like yes/no questions). Taken together, these results suggest that existing natural image datasets primarily require simple object- and attribute detection, with limited importance attached to spatial relations and other highly compositional phenomena.
+Past work [Ren paper] has achieved state-of-the-art results on the CocoQA
+dataset using a bag-of-words model . This is consistent with [VQA paper]'s
+observation that image features are most important for simple object- and
+activity-recognition questions, and that they make little difference for other
+categories (like yes/no questions). Taken together, these results suggest that
+existing natural image datasets primarily require simple object- and attribute
+detection, with limited importance attached to spatial relations and other
+highly compositional phenomena.
 
-As one of the primary goals of this work is to learn models for deep semantic compositionality, we have created an additional dataset with such compositional phenomena at the forefront. This dataset consists of highly structured questions about simple arrangements of colored shapes [XXX]. To eliminate mode-guessing as a viable strategy, all questions have a yes-or-no answer, but good performance requires that the system learn to recognize shapes and colors, and understand both spatial and logical relations among sets of objects.
+As one of the primary goals of this work is to learn models for deep semantic
+compositionality, we have created an additional dataset with such compositional
+phenomena at the forefront. This dataset consists of highly structured questions
+about simple arrangements of colored shapes [XXX]. To eliminate mode-guessing as
+a viable strategy, all questions have a yes-or-no answer, but good performance
+requires that the system learn to recognize shapes and colors, and understand
+both spatial and logical relations among sets of objects.
 
 
 \begin{table}[h]
@@ -308,11 +385,24 @@ As one of the primary goals of this work is to learn models for deep semantic co
   \caption{Synth data results}
 \end{table}
 
-As can be seen, our model achieves excellent performance on this dataset, while competing approaches fare little better than the majority baseline. Moreover, the color detectors and attention transformations behave as expected, indicating that our joint training procedure correctly allocates responsibilities among modules. Ultimately, in addition to achieving competitive results in answering simple questions about natural images, our approach is able to model complex compositional phenomena outside the capacity of previous approaches to visual question answering.
+As can be seen, our model achieves excellent performance on this dataset, while
+competing approaches fare little better than the majority baseline. Moreover,
+the color detectors and attention transformations behave as expected, indicating
+that our joint training procedure correctly allocates responsibilities among
+modules. Ultimately, in addition to achieving competitive results in answering
+simple questions about natural images, our approach is able to model complex
+compositional phenomena outside the capacity of previous approaches to visual
+question answering.
 
 \section{Conclusions and future work}
 
-In this paper, we have introduced the \emph{neural module network}, a general-purpose framework for learning collections of neural modules which can be freely composed into novel deep networks. We have demonstrated that this approach achieves state-of-the-art performance on existing datasets for visual question answering. Additionally, we have introduced a new dataset of highly compositional questions about simple arrangements of shapes, and shown that our approach substantially outperforms previous work.
+In this paper, we have introduced \emph{neural module networks}, which provide a
+general-purpose framework for learning collections of neural modules which can
+be freely composed into arbitrary deep networks. We have demonstrated that this
+approach achieves state-of-the-art performance on existing datasets for visual
+question answering. Additionally, we have introduced a new dataset of highly
+compositional questions about simple arrangements of shapes, and shown that our
+approach substantially outperforms previous work.
 
 So far have maintained a strict separation between predicting network
 structures and learning network parameters. It is easy to imagine that these two
