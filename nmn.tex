@@ -1,0 +1,414 @@
+\documentclass[10pt,twocolumn,letterpaper]{article}
+
+\usepackage{cvpr}
+\usepackage{times}
+\usepackage{epsfig}
+\usepackage{graphicx}
+
+\usepackage{booktabs}
+
+%\usepackage{algorithm}
+%\usepackage{algorithmic}
+%\usepackage{hyperref}
+%\usepackage{url}
+%\newcommand{\theHalgorithm}{\arabic{algorithm}}
+%
+%\usepackage{latexsym}
+%\usepackage{amsmath,amsfonts}
+%\usepackage{amssymb}
+%\usepackage{amsthm}
+%\usepackage{relsize}
+%\usepackage{mathtools}
+%\usepackage{tikz}
+%\usepackage{array}
+%\usepackage{subcaption}
+%\usepackage{comment}
+%\usepackage{multirow}
+%\usepackage{aliascnt}
+%\usepackage{xspace}
+%\usepackage[bb=fourier]{mathalfa}
+%%\usepackage[font=small]{caption}
+%\usepackage{siunitx}
+%\usepackage{tablefootnote}
+%\usepackage{multirow}
+%\usepackage{microtype}
+%\usepackage[export]{adjustbox}
+%\usepackage{footmisc}
+
+\include{defines}
+% Include other packages here, before hyperref.
+
+% If you comment hyperref and then uncomment it, you should delete
+% egpaper.aux before re-running latex.  (Or just hit 'q' on the first latex
+% run, let it finish, and you should be clear).
+\usepackage[pagebackref=true,breaklinks=true,letterpaper=true,colorlinks,bookmarks=false]{hyperref}
+
+% \cvprfinalcopy % *** Uncomment this line for the final submission
+
+\def\cvprPaperID{****} % *** Enter the CVPR Paper ID here
+\def\httilde{\mbox{\tt\raisebox{-.5ex}{\symbol{126}}}}
+
+% Pages are numbered in submission mode, and unnumbered in camera-ready
+\ifcvprfinal\pagestyle{empty}\fi
+\begin{document}
+
+\newcommand{\mod}[1]{{\small\texttt{#1}}}
+
+%%%%%%%%% TITLE
+\title{Deep Compositional Question Answering with Neural Module Networks}
+
+\author{First Author\\
+Institution1\\
+Institution1 address\\
+{\tt\small firstauthor@i1.org}
+% For a paper whose authors are all at the same institution,
+% omit the following lines up until the closing ``}''.
+% Additional authors and addresses can be added with ``\and'',
+% just like the second author.
+% To save space, use either the email address or home page, not both
+\and
+Second Author\\
+Institution2\\
+First line of institution2 address\\
+{\tt\small secondauthor@i2.org}
+}
+
+\maketitle
+%\thispagestyle{empty}
+
+%%%%%%%%% ABSTRACT
+\begin{abstract}
+Answering a question about an image, is a challenging task which requires understanding the question, grounding it in the image and jointly reasoning about the image content to produce a correct answer. Intuitively, this task is compositional in nature, \ie answering \emph{where the dog} in an image is can partially share an representation with \emph{which color the dog} is or \emph{where the cat} is. On the other hand, learning deep neural networks has shown impressive progress in question answering and related tasks. Consequently, we propose \emph{Neural Module Networks}, which composes several, jointly trained neural modules to answer questions about images. Specifically our approaches decomposes questions into their linguistic substructures and instantiates corresponding neural ``modules'' (\eg \emph{where, which color, dog}) which are stacked to a deep network. The resulting compound
+  networks are then jointly trained, whose composable neural ``modules'' 
+  can be dynamically remixed to interpret also novel questions. We evaluate our approach
+  to both new and established datasets for visual question answering, achieving
+  several state-of-the-art results.
+\end{abstract}
+
+\section{Introduction}
+\begin{figure}[t]
+\begin{center}
+\includegraphics[width=\linewidth]{fig/teaser}
+\end{center}
+   \caption{Our approach answers questions about images, it automatically instantiates different modules of neural networks depending on the question. An additional LSTM provides sentence context and learns common sense / dataset bias.}
+\label{fig:teaser}
+\end{figure}
+% how is this different from previous work? ack mateusz and jayant
+% what is the problem?
+Answering natural language questions about images is an interesting task, as it has many applications in human-robot interaction and \eg as assisting blind people. However, it is also an important research direction as it requires to combine fundamental techniques in both computer vision and natural language processing and has recently received increased attention in the computer vision and natural language processing communities \cite{malinowski15iccv}\cite{}\cite{}.
+
+Specifically, the problem we approach in this paper is given a natural language question, \eg \emph{Where is the dog?}, and an image we want to predict an an answer, \eg \emph{on the couch}. 
+Recent successful approaches for answering questions about images, represent questions as bag-of-words \cite{} or read in the question using a single recurrent neural network (RNN) \cite{malinowski15iccv}\cite{} and train a classifier on the full sentence representation and the full-image convolutional neural network (CNN). 
+Another line of work  \cite{} uses semantic parsers from the natural language processing
+literature to convert questions into logical expressions which are evaluated with respect to the image content.
+
+
+
+
+The problem is inherently compositional, \ie we can decompose the question e.g. in ... .
+Consequently
+
+
+
+This paper presents a general-purpose technique for integrating the
+representational power of neural networks with the flexible compositional
+structure afforded by symbolic approaches to semantics.  Where previous work has
+treated both the image and the question as inputs to a monolithic classification
+model, we instead take the perspective that a question is a noisy specification
+of a hidden computation that must be performed on the image to produce an
+answer. Crucially, this computation may be different for each problem instance,
+and is never observed observed during training.
+
+Our approach bears a superficial resemblance to a classical semantic parser.
+However, instead of mapping from questions to logical forms, our model maps from
+questions to neural network structures. These networks are assembled on the fly
+(possibly into novel topologies) from a collection of jointly-learned neural
+``modules''. Finally, they are evaluated against the input image to produce an
+answer.
+
+
+
+
+%This paper presents a technique for following natural language instructions (and
+%performing other dynamically-specified tasks) by assembling deep neural networks
+%on the fly from an inventory of pre-trained components.
+
+We evaluate our approach on three visual question answering tasks. On the
+recently-released CocoQA and VQA datasets, we achieve results comparable to
+[better than] existing approaches, and show that our approach specifically outperforms
+previous work on questions with compositional structure [e.g. requiring that an
+object be located and one of its attributes described]. However, most of the
+questions in both datasets are quite simple, involving little or no composition.
+To test our approach's ability to handle highly structured questions, we
+introduce a new dataset of synthetic images paired with complex questions
+involving spatial relations, logical operators, and shape and attribute
+recognition. On this dataset we outperform the previous state of the art by XXX.
+
+%We evaluate our approach on two visual question answering tasks. First we
+%present a new synthetic image dataset paired with a complex set of queries
+%(involving spatial relations, logical operators, and shape and
+%attribute recognition). Next, we consider a hard subset of the Microsoft VQA
+%corpus of questions about natural images. In each case, an NMN-based approach
+%outperforms state-of-the-art models with more conventional recurrent
+%architectures. We observe in particular that NMNs are able to make considerably
+%better use of small training sets.
+
+The contributions of this work are twofold. First, we demonstrate
+%technique for using
+that off-the-shelf tools for linguistic structure prediction can be used to
+inform decisions about neural network structure. Second, and more
+generally, we demonstrate that it is possible to train a collection of composable neural
+modules in such a way that they can be assembled into novel topologies at
+evaluation time.
+
+\section{Motivations}
+
+Many tasks in computer vision, including recognition, detection, and captioning,
+share common substructure. For example, we might schematically express the
+sequence of computations performed by a recognizer as
+\begin{flushleft}
+  \mod{classify(pickMostRelevant(detectObjects))}
+\end{flushleft}
+or a detector as
+\begin{flushleft}
+  \mod{drawBoundaries(detectObjects)}
+\end{flushleft}
+
+In practice the picture is not this clean---classification or detection is
+performed end-to-end by a single neural network, and the boundaries between
+these ``phases'' are not clearly defined. Nevertheless we might expect \textit{a
+priori} that a network used for classification might expose intermediate
+representations useful for building a detector. Indeed, it is now commonplace to
+initialize systems for a variety of vision tasks with a prefix of a network
+trained for classification \cite{Long14FullyConvolutional}. This has been shown
+to substantially reduce training time and improve accuracy. So while network
+structures are not \emph{universal} (in the sense that the same network is
+appropriate for all problems), they are at least empirically \emph{modular} (in
+the sense that intermediate representations for one task are useful for many
+others). 
+
+Can we generalize this idea in a way that is useful for question answering?
+Rather than thinking of question answering as a problem of learning a single
+function to map from questions and contexts to answers, it's perhaps useful to
+think of it as a highly-multitask learning setting, where each problem instance
+is associated with a novel task, and the identity of that task is expressed only
+noisily in language. If we consider a few examples of questions:
+\begin{center}
+  \begin{tabular}{ll}
+    {\it how many black cats?} & \mod{count(and(detect[cat], detect[black]))} \\
+    {\it what color is the cat?} & \mod{classify[color](detect[cat])} \\
+    {\it what color is the dog?} & \mod{classify[color](detect[dog])} \\
+    {\it is there a dog?} & \mod{exists(detect[dog])}
+  \end{tabular}
+\end{center}
+we again see that there is common computational substructure involved in solving
+the associated tasks.  With sub-networks for computing \mod{detect[cat]},
+\mod{classify}, \mod{count}, etc., we can in principle answer
+questions with novel structure like---e.g.\ {\it is there a black
+dog?}---without any additional training data.
+
+Note in particular that we expect these modules to differ not only in their
+parameters, but more fundamentally in their topologies. Intuitively, \mod{detect[cat]}
+should take an image as input, perform some fully-convolutional operation, and
+output an attention (understood as a distribution over positions in the image),
+while {\small\tt classify[color]} should take both the input image and such an attention, and map to a
+distribution over labels. Some computations require convolutional operations, some require fully-connected operations, and some (like counting) may require recurrent network structures. We should not expect that we will be able to use the same network layout for every problem, but do expect that parts of these networks may be reused in different orders.
+
+Thus our goal in this paper is to specify a framework for modular, composable, jointly-trained neural networks. In this framework, we first predict the structure of the computation needed to answer each question individually, then realize this structure by constructing an appropriately-shaped neural network from an inventory of reusable modules. These modules are learned jointly, rather than trained in isolation, and specialization to individual tasks (identifying properties, spatial relations, etc.) arises naturally from the training objective.
+
+\section{Related work}
+
+The idea of selecting a different network graph for each input datum is fundamental to both recurrent networks (where the network grows in the length of the input) \cite{Elman90RNN} and recursive neural networks (where the network is built, e.g., according to the syntactic structure of the input) \cite{Socher13CVG}. But both of these approaches ultimately involve repeated application of a single computational module (e.g.\ an LSTM or GRU cell). Our basic contribution is in allowing the nodes of this graph to perform heterogeneous computations, and for "messages" of different kinds---raw image features, attentions, classification predictions---to be passed from one module to the next. We are unaware of any previous work allowing such mixed collections of modules to be trained jointly. 
+
+We are also unaware of past use of a semantic parser to predict network structures, or more generally to exploit the natural similarity between set-theoretic approaches to classical semantic parsing and attentional approaches to computer vision. As noted above, there is a large literature on learning to answer questions about structured knowledge representations from question--answer pairs, both with and without learning of meanings for simple predicates \cite{Liang13DCS,Krish2013Grounded}.
+
+The present work is made possible by a number of recently-created corpora for question answering about images, including the DAQUAR dataset [CITE], the CocoQA dataset [CITE], and the VQA dataset [CITE]. Several models for visual questioning have already been proposed in the literature, all of which use standard deep sequence modeling machinery to construct a joint embedding of image and text, which is immediately mapped to a distribution over answers. Here we attempt to more XXXly model the computational process needed to produce each answer, but also benefit from sequence and image embeddings XXX.
+
+\section{Model}
+
+Given the high-level approach we have described so far, the first question is how to
+predict network structures given questions.
+For the experiments in this paper, we assume access to a pre-trained semantic parser
+which converts each natural language sentence into a simple structured
+representation of meaning, as in Section XXX. Thus each training datum for this
+task can be thought of as a 4-tuple $(w, p, x, y)$, where
+\begin{itemize}
+  \item $w$ is a natural-language question
+  \item $p$ is a semantic parse (produced by the parser)
+  \item $x$ is an image
+  \item $y$ is an answer
+\end{itemize}
+Our goal is to learn parameters $\theta$ for a probability distribution $p(y |
+w, p, x; \theta)$
+which maps from an input question and image to a distribution over answers. In
+the remainder of this section, we describe preprocessing steps applied to images
+and queries, and then describe how these are used to compute the final
+dsitribution $p(y | w, p, x)$.
+
+\subsection{Queries}
+
+As noted above, we assume access to a pre-trained semantic parser. Such parsers
+can easily be learned from existing datasets for semantic or even syntactic
+parsing; details of the parser for each experiment are given in the relevant
+portion of the experiments section. Future work might focus on learning this
+predictor jointly with the rest of the system, though in fact off-the-shelf
+tools produce high-quality analyses for almost all of the questions in our
+data.
+
+XXX something about the type system.
+
+XXX something about combinator logics / leaves of the tree.
+
+Thus, given a question like \emph{how many cats are black?} with logical form
+{\small\tt count(and(cat, black))}, we wish to convert it into a generic network
+layout of the form {\small\tt count(and(detect[cat], detect[black]))}, where
+brackets indicate XXX. The mapping from the functions {\small\tt detect} and
+{\small\tt black} can be inferred directly from the types assigned to each of
+these functions, so the only human-specified knowledge required by any part of
+the system is the extremely compact mapping from types to modules, specified
+fully here:
+
+\begin{tabular}{cc}
+  entity $\to$ truth & detect \\
+  truth $\to$ truth & redetect \\
+  truth $\to$ property & classify \\
+\end{tabular}
+
+\subsection{Images}
+
+We preprocess each image in the dataset with the first K layers of VGGNet [CITE].
+
+After both of these preprocessing steps, each training datum consists of (a
+string, a query, an image, and an answer).
+
+\subsection{Modules}
+
+Our goal in this section is to identify a small set of modules that can be
+assembled into all the configurations necessary for our tasks. This corresponds
+to identifying a minimal set of composable vision primitives. While others  may
+need to be invented in the future, we use the following for the tasks described
+in this paper.\\
+
+\paragraph{Attend}
+
+An attention module \mod{attend[$x$]} convolves every position in the input image with a weight vector (distinct for each $x$) to produce a heatmap or unnormalized attention. So, for example, the output of the module {\small\tt attend[dog]} is a matrix whose entries should be in regions of the image containing cats, and small everywhere else, as shown below.\\[1em]
+\includegraphics[width=\columnwidth]{fig/attend}
+
+\paragraph{Re-attend}
+
+A re-attention module \mod{re-attend[$x$]} performs a fully-connected mapping from one attention to another. Again, the weights for this mapping are distinct for each $x$. So \mod{re-attend[above]} should take an attention and shift the regions of greatest activation upward (as below), while \mod{re-attend[not]} should move attention away from the active regions.\\[1em]
+\includegraphics[width=\columnwidth]{fig/re-attend}
+
+\paragraph{Combine}
+
+A combination module \mod{combine[$x$]} merges two attentions into a single attention. For example, {\small\tt combine[and]} should be active only in the regions that are active in both inputs, while {\small\tt{combine[except]}} should be active where the first input is active and the second is inactive.\\[1em]
+\includegraphics[width=\columnwidth]{fig/combine}
+
+\paragraph{Classify}
+
+A classification module \mod{classify[$x$]} takes an attention and the input image and maps them to a distribution over labels. For example, {\small\tt classify[color]} should return a distribution over colors for the region attended to.\\[1em]
+\includegraphics[width=\columnwidth]{fig/classify}
+
+\subsection{Networks}
+
+Given the mapping from queries to network structures described above, we have for each training example a network structure, an input image, and an output label. In many cases, these network structures are different, but have tied parameters. Networks which have the same high-level structure but different instantiations of individual modules (for example \emph{what color is the cat}---{\small\tt classify[color](detect[cat])} and \emph{where is the truck}---{\small\tt classify[where](detect[truck])}) can be processed in the same batch, resulting in efficient computation. [should I say more about this?]
+
+It is important to emphasize that the labels we have assigned to distinguish instances of the same module type---\mod{cat}, \mod{and}, etc.---are a notational convenience, and do not reflect any manual specification of the behavior of the corresponding modules. \mod{detect[cat]} doesn't know it's supposed to be a cat detector, and \mod{combine[and]} doesn't know it's supposed to compute intersections of attentions. Instead, they acquire these semantics as a byproduct of the end-to-end training procedure. The image--answer pairs, coupled with the parameter tying scheme, are enough to ensure that each module specializes in an appropriate way.
+
+\begin{figure*}
+    \includegraphics[width=\textwidth]{fig/full2}
+\end{figure*}
+
+\subsection{Strings}
+
+\section{Learning}
+
+Our training objective is simply to find module parameters maximizing the likelihood of the data. By design, the last module in every network is a {\small\tt classify}, and so each assembled network represents a probability distribution.
+
+Because of the dynamic network structures used to answer questions, some weights are updated much more frequently than others. For this reason we found that learning algorithms with adaptive per-weight learning rates performed substantially better than simple gradient descent. All the experiments described below use AdaDelta (thus there was no hyperparameter search over step sizes).
+
+%---a simple feedforward
+%convolutional network is suitable for most detection and classification tasks,
+%but counting to arbitrary numbers probably requires a recurrent network.
+
+\section{Experiments: natural images}
+
+\begin{table}[h]
+  \footnotesize
+  \center
+  \begin{tabular}{cccccc}
+    \toprule
+    System & All & Yes/No & Color & Number & Other \\
+    \midrule
+    NMN \\
+    VIS+LSTM & 53.74 & 78.94 & 43.53 & 36.42 & \\
+    \bottomrule
+  \end{tabular}
+  \caption{CocoQA results}
+\end{table}
+
+\subsection{CocoQA}
+
+\begin{table}[h]
+  \footnotesize
+  \center
+  \begin{tabular}{cccccc}
+    \toprule
+    System & All & Object & Location & Color & Number \\
+    \midrule
+    NMN \\
+    IMG+BOW & 55.92 & 58.66 & 49.39 & 51.96 & 44.10 \\
+    2-VIS+BLSTM & 55.09 & 58.17 & 47.34 & 49.53 & 44.79 \\
+    \bottomrule
+  \end{tabular}
+  \caption{VQA results}
+\end{table}
+
+
+\section{Experiments: compositionality}
+
+Past work [Ren paper] has achieved state-of-the-art results on the CocoQA dataset using a bag-of-words model . This is consistent with [VQA paper]'s observation that image features are most important for simple object- and activity-recognition questions, and that they make little difference for other categories (like yes/no questions). Taken together, these results suggest that existing natural image datasets primarily require simple object- and attribute detection, with limited importance attached to spatial relations and other highly compositional phenomena.
+
+As one of the primary goals of this work is to learn models for deep semantic compositionality, we have created an additional dataset with such compositional phenomena at the forefront. This dataset consists of highly structured questions about simple arrangements of colored shapes [XXX]. To eliminate mode-guessing as a viable strategy, all questions have a yes-or-no answer, but good performance requires that the system learn to recognize shapes and colors, and understand both spatial and logical relations among sets of objects.
+
+
+\begin{table}[h]
+  \footnotesize
+  \center
+  \begin{tabular}{ccccc}
+    \toprule
+    System & All & Size 2 & Size 3 & Size 4 \\
+    \midrule
+    NMN & 90.62* & 89.69* & 92.36* & 85.16* \\
+    VIS+LSTM &  \\
+    \bottomrule
+  \end{tabular}
+  \caption{Synth data results}
+\end{table}
+
+As can be seen, our model achieves excellent performance on this dataset, while competing approaches fare little better than the majority baseline. Moreover, the color detectors and attention transformations behave as expected, indicating that our joint training procedure correctly allocates responsibilities among modules. Ultimately, in addition to achieving competitive results in answering simple questions about natural images, our approach is able to model complex compositional phenomena outside the capacity of previous approaches to visual question answering.
+
+\section{Conclusions and future work}
+
+In this paper, we have introduced the \emph{neural module network}, a general-purpose framework for learning collections of neural modules which can be freely composed into novel deep networks. We have demonstrated that this approach achieves state-of-the-art performance on existing datasets for visual question answering. Additionally, we have introduced a new dataset of highly compositional questions about simple arrangements of shapes, and shown that our approach substantially outperforms previous work.
+
+So far have maintained a strict separation between predicting network
+structures and learning network parameters. It is easy to imagine that these two
+problems might be solved jointly, with uncertainty maintained over network
+structures throughout training and decoding.
+
+The fact that deep neural modules can be trained to produce predictable
+outputs---even when freely composed---points toward a more general paradigm of
+``programs'' built from neural networks. In this paradigm, network designers
+(human or automated) have access to a standard kit of neural parts from which to
+construct models for performing complex reasoning tasks. While visual question
+answering provides a natural testbed for this approach, its usefulness is
+potentially much broader, extending to queries about documents and structured
+knowledge bases or more general signal processing and function approximation.
+
+{\small
+\bibliographystyle{ieee}
+\bibliography{biblioShort,rohrbach,related,jacob}
+}
+
+\end{document}

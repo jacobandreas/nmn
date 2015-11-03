@@ -1,0 +1,52 @@
+% Add a period to the end of an abbreviation unless there's one
+ \makeatletter
+ \DeclareRobustCommand\onedot{\futurelet\@let@token\@onedot}
+ \def\@onedot{\ifx\@let@token.\else.\null\fi\xspace}
+ \def\eg{e.g\onedot} \def\Eg{E.g\onedot}
+ \def\ie{i.e\onedot} \def\Ie{I.e\onedot}
+ \def\cf{cf\onedot} \def\Cf{Cf\onedot}
+ \def\etc{etc\onedot} \def\vs{vs\onedot}
+ \def\wrt{w.r.t\onedot} \def\dof{d.o.f\onedot}
+ \def\etal{\textit{et~al\onedot}} \def\iid{i.i.d\onedot}
+ \def\Fig{Fig\onedot} \def\Eqn{Eqn\onedot} \def\Sec{Sec\onedot}
+ \def\vs{vs\onedot}
+ \makeatother
+
+
+\DeclareRobustCommand{\figref}[1]{Figure~\ref{#1}}
+\DeclareRobustCommand{\figsref}[1]{Figures~\ref{#1}}
+
+\DeclareRobustCommand{\Figref}[1]{Figure~\ref{#1}}
+\DeclareRobustCommand{\Figsref}[1]{Figures~\ref{#1}}
+
+\DeclareRobustCommand{\Secref}[1]{Section~\ref{#1}}
+\DeclareRobustCommand{\secref}[1]{Section~\ref{#1}}
+
+\DeclareRobustCommand{\Secsref}[1]{Sections~\ref{#1}}
+\DeclareRobustCommand{\secsref}[1]{Sections~\ref{#1}}
+
+\DeclareRobustCommand{\Tableref}[1]{Table~\ref{#1}}
+\DeclareRobustCommand{\tableref}[1]{Table~\ref{#1}}
+
+\DeclareRobustCommand{\Tablesref}[1]{Tables~\ref{#1}}
+\DeclareRobustCommand{\tablesref}[1]{Tables~\ref{#1}}
+
+\DeclareRobustCommand{\eqnref}[1]{Equation~(\ref{#1})}
+\DeclareRobustCommand{\Eqnref}[1]{Equation~(\ref{#1})}
+
+\DeclareRobustCommand{\eqnsref}[1]{Equations~(\ref{#1})}
+\DeclareRobustCommand{\Eqnsref}[1]{Equations~(\ref{#1})}
+
+\DeclareRobustCommand{\chapref}[1]{Chapter~\ref{#1}}
+\DeclareRobustCommand{\Chapref}[1]{Chapter~\ref{#1}}
+
+\DeclareRobustCommand{\chapsref}[1]{Chapters~\ref{#1}}
+\DeclareRobustCommand{\Chapsref}[1]{Chapters~\ref{#1}}
+
+
+% \setlength{\topskip}{0mm}
+% \setlength{\abovecaptionskip}{3mm}
+% \setlength{\belowcaptionskip}{3mm}
+% \setlength{\textfloatsep}{5mm}
+
+\hyphenation{po-si-tive}
