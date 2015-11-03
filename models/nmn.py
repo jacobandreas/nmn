@@ -140,13 +140,13 @@ class NMNModel:
         all_norm = 0.
         for param_name in self.apollo_net.active_param_names():
             param = self.apollo_net.params[param_name]
-            grad = param.diff
+            grad = param.diff + self.opt_config.l2 * param.data
             all_norm += np.sum(np.square(grad))
         all_norm = np.sqrt(all_norm)
 
         for param_name in self.apollo_net.active_param_names():
             param = self.apollo_net.params[param_name]
-            grad = param.diff
+            grad = param.diff + self.opt_config.l2 * param.data
 
             if all_norm > clip:
                 grad = clip * grad / all_norm

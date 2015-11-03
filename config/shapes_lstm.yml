@@ -1,0 +1,18 @@
+task:
+  name: shapes
+  pad_to_width: 30
+  pad_to_height: 30
+
+model:
+  name: lstm
+  hidden_size: 512
+  image_before: true
+  image_after: true
+
+opt:
+  batch_size: 64
+  batch_by: length
+  learning_rate: 0.01
+  momentum: 0.9
+  clip: 10
+  iters: 1001
