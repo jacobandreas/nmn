@@ -5,3 +5,5 @@
 *.blg
 *.brf
 *.log
+/tmp/
+/nmn.synctex.gz

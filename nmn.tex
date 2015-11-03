@@ -52,7 +52,9 @@
 \ifcvprfinal\pagestyle{empty}\fi
 \begin{document}
 
+\newcommand{\nmn}{Neural Module Networks\xspace}
 \newcommand{\mod}[1]{{\small\texttt{#1}}}
+\newcommand{\todo}{\textcolor{red}}
 
 %%%%%%%%% TITLE
 \title{Deep Compositional Question Answering with Neural Module Networks}
@@ -78,88 +80,14 @@ First line of institution2 address\\
 
 %%%%%%%%% ABSTRACT
 \begin{abstract}
-Answering a question about an image, is a challenging task which requires understanding the question, grounding it in the image and jointly reasoning about the image content to produce a correct answer. Intuitively, this task is compositional in nature, \ie answering \emph{where the dog} in an image is can partially share an representation with \emph{which color the dog} is or \emph{where the cat} is. On the other hand, learning deep neural networks has shown impressive progress in question answering and related tasks. Consequently, we propose \emph{Neural Module Networks}, which composes several, jointly trained neural modules to answer questions about images. Specifically our approaches decomposes questions into their linguistic substructures and instantiates corresponding neural ``modules'' (\eg \emph{where, which color, dog}) which are stacked to a deep network. The resulting compound
+Answering a question about an image, is a challenging task which requires understanding the question, grounding it in the image and jointly reasoning about the image content to produce a correct answer. Intuitively, this task is compositional in nature, \ie answering \emph{where the dog} in an image is can partially share an representation with \emph{which color the dog} is or \emph{where the cat} is. On the other hand, learning deep neural networks has shown impressive progress in question answering and related tasks. Consequently, we propose \emph{\nmn}, which composes several, jointly trained neural modules to answer questions about images. Specifically our approaches decomposes questions into their linguistic substructures and instantiates corresponding neural ``modules'' (\eg \emph{where, which color, dog}) which are stacked to a deep network. The resulting compound
   networks are then jointly trained, whose composable neural ``modules'' 
   can be dynamically remixed to interpret also novel questions. We evaluate our approach
-  to both new and established datasets for visual question answering, achieving
-  several state-of-the-art results.
+  on three challenging datasets for visual question answering, achieving
+   overall state-of-the-art performance, but outperforming related work for more complex questions.
 \end{abstract}
 
-\section{Introduction}
-\begin{figure}[t]
-\begin{center}
-\includegraphics[width=\linewidth]{fig/teaser}
-\end{center}
-   \caption{Our approach answers questions about images, it automatically instantiates different modules of neural networks depending on the question. An additional LSTM provides sentence context and learns common sense / dataset bias.}
-\label{fig:teaser}
-\end{figure}
-% how is this different from previous work? ack mateusz and jayant
-% what is the problem?
-Answering natural language questions about images is an interesting task, as it has many applications in human-robot interaction and \eg as assisting blind people. However, it is also an important research direction as it requires to combine fundamental techniques in both computer vision and natural language processing and has recently received increased attention in the computer vision and natural language processing communities \cite{malinowski15iccv}\cite{}\cite{}.
-
-Specifically, the problem we approach in this paper is given a natural language question, \eg \emph{Where is the dog?}, and an image we want to predict an an answer, \eg \emph{on the couch}. 
-Recent successful approaches for answering questions about images, represent questions as bag-of-words \cite{} or read in the question using a single recurrent neural network (RNN) \cite{malinowski15iccv}\cite{} and train a classifier on the full sentence representation and the full-image convolutional neural network (CNN). 
-Another line of work  \cite{} uses semantic parsers from the natural language processing
-literature to convert questions into logical expressions which are evaluated with respect to the image content.
-
-
-
-
-The problem is inherently compositional, \ie we can decompose the question e.g. in ... .
-Consequently
-
-
-
-This paper presents a general-purpose technique for integrating the
-representational power of neural networks with the flexible compositional
-structure afforded by symbolic approaches to semantics.  Where previous work has
-treated both the image and the question as inputs to a monolithic classification
-model, we instead take the perspective that a question is a noisy specification
-of a hidden computation that must be performed on the image to produce an
-answer. Crucially, this computation may be different for each problem instance,
-and is never observed observed during training.
-
-Our approach bears a superficial resemblance to a classical semantic parser.
-However, instead of mapping from questions to logical forms, our model maps from
-questions to neural network structures. These networks are assembled on the fly
-(possibly into novel topologies) from a collection of jointly-learned neural
-``modules''. Finally, they are evaluated against the input image to produce an
-answer.
-
-
-
-
-%This paper presents a technique for following natural language instructions (and
-%performing other dynamically-specified tasks) by assembling deep neural networks
-%on the fly from an inventory of pre-trained components.
-
-We evaluate our approach on three visual question answering tasks. On the
-recently-released CocoQA and VQA datasets, we achieve results comparable to
-[better than] existing approaches, and show that our approach specifically outperforms
-previous work on questions with compositional structure [e.g. requiring that an
-object be located and one of its attributes described]. However, most of the
-questions in both datasets are quite simple, involving little or no composition.
-To test our approach's ability to handle highly structured questions, we
-introduce a new dataset of synthetic images paired with complex questions
-involving spatial relations, logical operators, and shape and attribute
-recognition. On this dataset we outperform the previous state of the art by XXX.
-
-%We evaluate our approach on two visual question answering tasks. First we
-%present a new synthetic image dataset paired with a complex set of queries
-%(involving spatial relations, logical operators, and shape and
-%attribute recognition). Next, we consider a hard subset of the Microsoft VQA
-%corpus of questions about natural images. In each case, an NMN-based approach
-%outperforms state-of-the-art models with more conventional recurrent
-%architectures. We observe in particular that NMNs are able to make considerably
-%better use of small training sets.
-
-The contributions of this work are twofold. First, we demonstrate
-%technique for using
-that off-the-shelf tools for linguistic structure prediction can be used to
-inform decisions about neural network structure. Second, and more
-generally, we demonstrate that it is possible to train a collection of composable neural
-modules in such a way that they can be assembled into novel topologies at
-evaluation time.
+\input{intro}
 
 \section{Motivations}
 
