@@ -1,10 +1,7 @@
-*.pyc
+*.*.swp
+*.pdf
+*.bbl
+*.aux
+*.blg
+*.brf
 *.log
-data/*
-_old
-*.swp
-weights*
-*.lprof
-vis
-saves
-logs
