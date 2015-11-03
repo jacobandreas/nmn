@@ -3,7 +3,8 @@
 The idea of selecting a different network graph for each input datum is fundamental to both recurrent networks (where the network grows in the length of the input) \cite{Elman90RNN} and recursive neural networks (where the network is built, e.g., according to the syntactic structure of the input) \cite{Socher13CVG}. But both of these approaches ultimately involve repeated application of a single computational module (\eg an LSTM \cite{} or GRU \cite{} cell). Our basic contribution is in allowing the nodes of this graph to perform heterogeneous computations, and for "messages" of different kinds---raw image features, attentions, classification predictions---to be passed from one module to the next. We are unaware of any previous work allowing such mixed collections of modules to be trained jointly. 
 
 \paragraph{non-image QA}
-text only based: \cite{berant14acl,Liang13DCS}i
+text only based: \cite{berant14acl,Liang13DCS}
+
 \cite{geman15nas} a binary (yes/no) version of Visual Turing Test on synthetic data.
 
 We are also unaware of past use of a semantic parser to predict network structures, or more generally to exploit the natural similarity between set-theoretic approaches to classical semantic parsing and attentional approaches to computer vision. As noted above, there is a large literature on learning to answer questions about structured knowledge representations from question--answer pairs, both with and without learning of meanings for simple predicates \cite{Liang13DCS,Krish2013Grounded}.
