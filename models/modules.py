@@ -1,6 +1,6 @@
 #!/usr/bin.env python2
 
-from indices import LAYOUT_INDEX, STRING_INDEX, ANSWER_INDEX
+from indices import LAYOUT_INDEX, STRING_INDEX, ANSWER_INDEX, UNK, NULL
 import my_layers
 from util import Index
 
@@ -21,10 +21,11 @@ class BOWModule:
         self.data_name = "BOW__data"
         self.ip_name = "BOW__ip"
         self.sum_name = "BOW__sum"
+        self.cat_name = "BOW__cat"
 
         #self.wordvec_param_name = "BOW__wordvec_param"
 
-        self.output_name = self.sum_name
+        self.output_name = self.ip_name
 
     def forward(self, tokens):
         net = self.apollo_net
@@ -49,13 +50,14 @@ class BOWModule:
         #word_bottoms = [self.wordvec_name % t for t in range(tokens.shape[1])]
         #bottoms = word_bottoms + [self.incoming_name]
 
-        net.f(layers.Data(self.data_name, indices))
+        net.f(layers.NumpyData(self.data_name, indices))
+        net.f(layers.Concat(self.cat_name, bottoms=[self.data_name, self.incoming_name]))
         net.f(layers.InnerProduct(
-            self.ip_name, len(ANSWER_INDEX), bottoms=[self.data_name]))
+            self.ip_name, len(ANSWER_INDEX), bottoms=[self.cat_name]))
 
-        net.f(layers.Eltwise(
-            self.sum_name, bottoms=[self.data_name, self.ip_name], 
-            operation="SUM"))
+        #net.f(layers.Eltwise(
+        #    self.sum_name, bottoms=[self.incoming_name, self.ip_name], 
+        #    operation="SUM"))
 
 class LSTMModule:
     def __init__(self, hidden_size, incoming_name, keep_training, apollo_net):
