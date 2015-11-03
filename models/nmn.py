@@ -222,7 +222,7 @@ class NMNModel:
     def get_reading_module(self, output_name):
         train_lstm = hasattr(self.config, "train_lstm") and \
                      self.config.train_lstm
-        return modules.LSTMModule(
-                self.config.hidden_size, output_name, train_lstm, 
-                self.apollo_net)
-        #return modules.BOWModule(output_name, self.apollo_net)
+        #return modules.LSTMModule(
+        #        self.config.hidden_size, output_name, train_lstm, 
+        #        self.apollo_net)
+        return modules.BOWModule(output_name, self.apollo_net)
