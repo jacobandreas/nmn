@@ -8,11 +8,11 @@
 \end{figure}
 % how is this different from previous work? ack mateusz and jayant
 % what is the problem?
-Answering natural language questions about images is an interesting task, as it has many applications in human-robot interaction such as assisting blind people. However, it is also an important research direction as it requires to combine fundamental techniques in both computer vision and natural language processing and has recently received increased attention in the computer vision and natural language processing communities \cite{malinowski15iccv}\cite{}\cite{}.
+Answering natural language questions about images is an interesting task, as it has many applications in human-robot interaction such as assisting blind people. However, it is also an important research direction as it requires to combine fundamental techniques in both computer vision and natural language processing and has recently received increased attention in the computer vision and natural language processing communities \cite{antol15iccv,gao2015you,ma15arxiv,malinowski15iccv,ren2015image,yu15arxiv}.
 
 Specifically, the problem we approach in this paper is given a natural language question, \eg \emph{Where is the dog?}, and an image we want to predict an an answer, \eg \emph{on the couch}. 
 Recent successful approaches for answering questions about images, represent questions as bag-of-words \cite{} or read in the question using a single recurrent neural network (RNN) \cite{malinowski15iccv}\cite{} and train a classifier on the full sentence representation and the full-image convolutional neural network (CNN). 
-Another line of work  \cite{} uses semantic parsers from the natural language processing
+Another line of work  \cite{malinowski15nips} uses semantic parsers from the natural language processing
 literature to decompose questions into logical expressions which are evaluated with respect to the image content.
 
 In this paper we want to draw from these two different direction and presents a general-purpose technique for integrating the
