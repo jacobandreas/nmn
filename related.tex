@@ -1,5 +1,7 @@
 \section{Related work}
 
+XXX my conll and emnlp for "continuous on bottom, discrete on top" with Jayant
+
 The idea of selecting a different network graph for each input datum is fundamental to both recurrent networks (where the network grows in the length of the input) \cite{Elman90RNN} and recursive neural networks (where the network is built, e.g., according to the syntactic structure of the input) \cite{Socher13CVG}. But both of these approaches ultimately involve repeated application of a single computational module (\eg an LSTM \cite{} or GRU \cite{} cell). Our basic contribution is in allowing the nodes of this graph to perform heterogeneous computations, and for "messages" of different kinds---raw image features, attentions, classification predictions---to be passed from one module to the next. We are unaware of any previous work allowing such mixed collections of modules to be trained jointly. 
 
 \paragraph{non-image QA}
