@@ -1,12 +1,24 @@
 \documentclass[10pt,twocolumn,letterpaper]{article}
 
+% distinction between parser / layout generator (other applications may provide
+% structured queries)
+% more motivation
+% spatial heatmap / attention NOT detection
+% not classify but recognize
+% ``structured'' = easy
+% how general is the parser? (where will it fail, are we losing perf., etc.)
+% explain module notation
+% symbol in bracketes
+% above vs not
+% real figures for inplace
+% rules are ``simple''
+
 \usepackage{cvpr}
 \usepackage{times}
 \usepackage{epsfig}
 \usepackage{graphicx}
 
 \usepackage{booktabs}
-\usepackage{xspace}
 
 %\usepackage{algorithm}
 %\usepackage{algorithmic}
@@ -46,7 +58,7 @@
 
 % \cvprfinalcopy % *** Uncomment this line for the final submission
 
-\def\cvprPaperID{****} % *** Enter the CVPR Paper ID here
+\def\cvprPaperID{1114} % *** Enter the CVPR Paper ID here
 \def\httilde{\mbox{\tt\raisebox{-.5ex}{\symbol{126}}}}
 
 % Pages are numbered in submission mode, and unnumbered in camera-ready
@@ -56,7 +68,7 @@
 \newcommand{\nmn}{Neural Module Networks\xspace}
 \newcommand{\mod}[1]{{\small\texttt{#1}}}
 \newcommand{\todo}{\textcolor{red}}
-\newcommand{\shapes}{{\textsc{shapes}\xspace}}
+\newcommand{\shapes}{{\textsc{shapes}}\xspace}
 
 %%%%%%%%% TITLE
 \title{Deep Compositional Question Answering with Neural Module Networks}
@@ -403,9 +415,19 @@ XXX babyai
 \end{figure}
 
 
+\begin{figure}
+  \centering
+  \begin{tabular}{cc}
+    \includegraphics[width=0.25\columnwidth]{fig/shapes_in1} &
+    \includegraphics[width=0.25\columnwidth]{fig/shapes_out1} \\
+    \includegraphics[width=0.25\columnwidth]{fig/shapes_in2} &
+    \includegraphics[width=0.25\columnwidth]{fig/shapes_out2} \\
+  \end{tabular}
+\end{figure}
+
 \begin{table}
   \footnotesize
-  \center
+  \centering
   \begin{tabular}{ccccc}
     \toprule
     System & All & Size 2 & Size 3 & Size 4 \\
