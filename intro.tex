@@ -11,21 +11,22 @@
     } \label{fig:teaser}
 \end{figure}
 
-This paper describes \emph{neural module networks} (NMNs), a modular framework
-for visual quesiton answering. We answer natural language questions about images
-using collections of jointly-trained neural ``modules'', dynamically assembled
-into deep networks based on linguistic structure. 
+This paper describes an approach to visual question answering based on
+\emph{neural module networks} (NMNs). We answer natural language questions about
+images using collections of jointly-trained neural ``modules'', dynamically
+composed into deep networks based on linguistic structure. 
 
-The visual QA task has been the subject of a great deal of recent research
-attention
-\cite{antol15iccv,gao2015you,ma15arxiv,malinowski15iccv,ren2015image,yu15arxiv},
-and has significant applications to human-robot interaction, search, and
-accessibility.  Visual QA requires sophisticated understanding of both visual
-scenes and natural language.
-%
 Concretely, given an image and an associated question (e.g.\ \emph{where is
 the dog?}), we wish to predict a corresponding answer (e.g.\ \emph{on the
-couch}, or perhaps just \emph{couch}). Recent successful approaches represent
+couch}, or perhaps just \emph{couch}) \autoref{fig:teaser}.
+The visual QA task has significant significant applications to human-robot
+interaction, search, and accessibility, and has been the subject of a great deal
+of recent research attention
+\cite{antol15iccv,gao2015you,ma15arxiv,malinowski15iccv,ren2015image,yu15arxiv}.
+The task requires sophisticated understanding of both visual
+scenes and natural language.
+%
+ Recent successful approaches represent
 questions as bags of words, or encode in the question using a recurrent neural
 network \cite{malinowski15iccv} and train a simple classifier on the encoded
 question and image. In contrast to these monolithic approaches, another line of
@@ -40,12 +41,12 @@ integrating the representational power of neural networks with the flexible
 compositional structure afforded by symbolic approaches to semantics.  Rather
 than relying on a monolithic network structure to answer all questions, our
 approach assembles a network on the fly from a collection of specialized,
-jointly-learned modules (\autoref{fig:teaser}). Rather than reasoning over
-truth values, we remain entirely in the domain of visual features and
-attentions.
+jointly-learned modules (\autoref{fig:teaser}). Rather than using logic to
+reason over truth values, we remain entirely in the domain of visual features
+and attentions.
 
 Our approach first analyzes
-each question with an off-the-shelf semantic parser, and uses this analysis to
+each question with a semantic parser, and uses this analysis to
 determine the basic computational units (attention, classification, etc.) needed
 to answer the question, as well as the relationships between the modules. In
 \autoref{fig:teaser}, we first produce an attention focused on the dog, which
@@ -60,7 +61,7 @@ Different kinds of modules are shown in different colors; attention modules
 %colors in \Figref{fig:teaser}: for example the \mod{attend[$dog$]} module
 %(green) produces a spatial heatmap while the \mod{classify[$where$]} (blue)
 %recognizes what is in the image region localized by the attention heatmap.
-Importantly, all modules of a NMN are independent and composable, which allows
+Importantly, all modules in an NMN are independent and composable, which allows
 the computation to be different for each problem instance, and possibly
 unobserved during training. 
 %So that we can answer novel question at test time, such as
@@ -92,18 +93,17 @@ and dataset biases \cite{malinowski15iccv}.
 %(and performing other dynamically-specified tasks) by assembling deep neural
 %networks on the fly from an inventory of pre-trained components.
 
-We evaluate our approach on three visual question answering tasks. On the
-recently-released CocoQA \cite{yu15arxiv} and VQA \cite{antol15iccv} datasets,
-we achieve results comparable to or better than existing approaches, and show
-that our approach specifically outperforms previous work on questions with
-compositional structure (\eg requiring that an object be located and one of its
-attributes described). It turns out, however, that many of the questions in both
-datasets are quite simple, with little composition or reasoning required. To
-test our approach's ability to handle harder questions, we introduce
-a new dataset of synthetic images paired with complex questions involving
-spatial relations, set-theoretic reasoning, and shape and attribute recognition.
-On this dataset we outperform competing approaches by as much as 25\% absolute
-aaccuracy.
+We evaluate our approach on two visual question answering tasks. On the
+recently-released VQA \cite{antol15iccv} datasets we achieve results comparable
+to or better than existing approaches, and show that our approach specifically
+outperforms previous work on questions with compositional structure (\eg
+requiring that an object be located and one of its attributes described). It
+turns out, however, that many of the questions in both datasets are quite
+simple, with little composition or reasoning required. To test our approach's
+ability to handle harder questions, we introduce a new dataset of synthetic
+images paired with complex questions involving spatial relations, set-theoretic
+reasoning, and shape and attribute recognition.  On this dataset we outperform
+competing approaches by as much as 25\% absolute accuracy.
 
 While all the applications considered in this paper involve visual question
 answering, the general architecture is potentially of broader usefulness, and
@@ -148,13 +148,13 @@ systems described in this paper, upon publication.
 %these ``phases'' are not clearly defined. Nevertheless we might expect \textit{a
 %priori} that a network used for classification might expose intermediate
 %representations useful for building a detector. 
-We begin with two simple observations. First, that there is no single ``best
-network'' for all purposes---state-of-the-art performance on the full range of
-computer vision tasks that are studied requires a variety of different deep
-network topologies. Second, though different networks are used for different
-purposes, it is commonplace to initialize systems for many of vision tasks with
-a prefix of a network trained for classification \cite{Girshick14RCNN}. 
-This has been shown to substantially reduce training time and improve accuracy. 
+We begin with two simple observations. First, state-of-the-art performance on
+the full range of computer vision tasks that are studied requires a variety of
+different deep network topologies---there is no single ``best network'' for all
+tasks. Second, though different networks are used for different purposes, it is
+commonplace to initialize systems for many of vision tasks with a prefix of a
+network trained for classification \cite{Girshick14RCNN}.  This has been shown
+to substantially reduce training time and improve accuracy. 
 
 So while network structures are not \emph{universal} (in the sense that the same
 network is appropriate for all problems), they are at least empirically

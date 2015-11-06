@@ -32,8 +32,8 @@ basic data types: images, unnormalized attentions, and labels.  For the
 particular task and modules described in this paper, almost all interesting
 compositional phenomena occur in the space of attentions, and it is not
 unreasonable to characterize our contribution more narrowly as an
-``attention-composition'' network. Nevertheless, other types may be required in
-the future (for different new or for greater coverage in the VQA domain).
+``attention-composition'' network. Nevertheless, other types may be easily added
+in the future (for new applications or for greater coverage in the VQA domain).
 
 First, some notation: module names are typeset in a {\tt fixed width font}, and
 are of the form \mod{TYPE[INSTANCE](ARG$_1$, \ldots)}. \mod{TYPE} is a
@@ -90,7 +90,7 @@ inactive.
 \includegraphics[width=\columnwidth]{fig/classify}
 A classification module \mod{classify[$c$]} takes an attention and the input
 image and maps them to a distribution over labels. For example, {\small\tt
-classify[color]} should return a distribution over colors for the region
+classify[color]} should return a distribution over colors in the region
 attended to.
 
 \subsubsection*{Measurement}
@@ -132,6 +132,8 @@ detected object, or counting sets of objects.
 
 \subsection{From strings to networks}
 
+Having built up an inventory of modules, we now need to assemble them into the
+layout specified by the question.
 The transformation from a natural language question to an instantiated neural
 network takes place in two steps.  First we map from natural language questions
 to \emph{layouts}, which specify both the set of modules used to answer a given
@@ -145,7 +147,7 @@ system. %, though in fact off-the-shelf tools produce high-quality analyses for
 %almost all the questions in our data.
 
 \paragraph{Parsing}
-Specifically, we begin by parsing each question with the Stanford Parser
+We begin by parsing each question with the Stanford Parser
 \cite{Klein03Unlex}.
 to obtain a universal dependency representation \cite{DeMarneffe08Deps}.
 Dependency parses express grammatical relations between parts of a sentence
@@ -156,7 +158,7 @@ sentence. The parser also performs basic lemmatization, for example turning
 
 Next, we filter the set of dependencies to those connected the wh-word in the
 question (the exact distance we traverse varies depending on the task). This
-gives a simple logical form expressing (the primary) part of the sentence's
+gives a simple symbolic form expressing (the primary) part of the sentence's
 meaning.  For example, \emph{what is standing in the field} becomes
 \mod{what(stand)}; \emph{what color is the truck} becomes \mod{color(truck)},
 and \emph{is there a circle next to a square} becomes \mod{is(cicle,
@@ -164,19 +166,24 @@ next-to(square))}.
 In the process we also strip away function words like determiners and
 modals, so \emph{what type of cakes were they?} and \emph{what type of cake is
 it?} both get converted to \mod{type(cake)}.
-
-It is easiest to think of these representations as pieces of a variable-free
-combinatory logic \cite{Liang13DCS}; every leaf is implicitly a function taking
-the image as input. The code for transforming parse trees to structured queries
+The code for transforming parse trees to structured queries
 will be provided in the accompanying software package.
 
+These representations bear a certain resemblance to pieces of a combinatory
+logic \cite{Liang13DCS}: every leaf is implicitly a function taking the image as
+input, and the root represents the final value of the computation.  But our
+approach, while compositional and combinatorial, is crucially not logical: the
+inferential computations operate on continuous representations produced by
+neural networks, becoming discrete only in the prediction of the final answer.
+
 \paragraph{Layout}
-These logical forms already determine the structure of the predicted network,
-but not the identities of the modules that compose it. This final assignment of
-modules is fully determined by the structure of the parse. All leaves become
-\mod{attend} modules, all internal nodes become \mod{re-attend} or \mod{combine}
-modules dependint on their arity, and root nodes become \mod{measure} modules
-for yes/no questions and \mod{classify} modules for all other quesiton types.
+These symbolic representations already determine the structure of the predicted
+networks, but not the identities of the modules that compose them. This final
+assignment of modules is fully determined by the structure of the parse. All
+leaves become \mod{attend} modules, all internal nodes become \mod{re-attend} or
+\mod{combine} modules dependint on their arity, and root nodes become
+\mod{measure} modules for yes/no questions and \mod{classify} modules for all
+other quesiton types.
 
 Given the mapping from queries to network layouts described above, we have for
 each training example a network structure, an input image, and an output label.
@@ -248,21 +255,25 @@ but which might affect the answer, are discarded. For example, \emph{what is
 flying?} and \emph{what are flying?} both get converted to \mod{what(fly)}, but
 their answers should be \emph{kite} and \emph{kites} respectively, even given
 the same underlying image features. The question encoder thus allows us to model
-underlying syntactic regularities in the data. Second, it allows us to capture
-\emph{semantic} regularities: with missing or low-quality image data, it is
-reasonable to guess that \emph{what color is the bear?} is answered by
+underlying \emph{syntactic} regularities in the data. Second, it allows us to
+capture \emph{semantic} regularities: with missing or low-quality image data, it
+is reasonable to guess that \emph{what color is the bear?} is answered by
 \emph{brown}, and unreasonable to guess \emph{green}. The question encoder also
 allows us to model effects of this kind.
 
 All experiments in this paper use a standard single-layer LSTM with 1024 hidden
-units.
+units. The question modeling component predicts a distribution over the set of
+answers, like the root module of the NMN. The final prediction from the model is
+a geometric average of these two probability distributions, dynamically
+reweighted using both text and image features. The complete model, including
+both the NMN and sequence modeling component, is trained jointly.
 
 \section{Training neural module networks}
 
 Our training objective is simply to find module parameters maximizing the
-likelihood of the data. By design, the last module in every network is a
-{\small\tt classify}, and so each assembled network represents a probability
-distribution.
+likelihood of the data. By design, the last module in every network outputs a
+distribution over labels, and so each assembled network also represents a
+probability distribution.
 
 Because of the dynamic network structures used to answer questions, some weights
 are updated much more frequently than others. For this reason we found that

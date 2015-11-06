@@ -16,8 +16,8 @@ dataset \cite{yu15arxiv} and the VQA dataset \cite{antol15iccv} are
 significantly larger and have more visual variety. Both are based on images from
 the COCO dataset \cite{lin14eccv}. While \cocoqa contains question-answer pairs
 automatically generated from the descriptions associated with the COCO dataset,
-\cite{antol15iccv} has crowed sourced questions-answer pairs. We evaluated our
-approach on the latter two.
+\cite{antol15iccv} has crowed sourced questions-answer pairs. We evaluate our
+approach on VQA.
 
 Notable ``classical'' approaches to this task include
 \cite{malinowski14nips,Krish2013Grounded}. Both of these approaches are similar
@@ -45,9 +45,9 @@ sentence generation. The attentional component of our model is inspired by these
 
 There is a large literature on learning to answer questions about structured
 knowledge representations from question--answer pairs, both with and without
-learning of meanings for simple predicates \cite{Liang13DCS,Krish2013Grounded}.
+joint learning of meanings for simple predicates \cite{Liang13DCS,Krish2013Grounded}.
 Outside of question answering, several models have been proposed for instruction
-following that impose a discrete ``command structure'' over an underlying
+following that impose a discrete ``planning structure'' over an underlying
 continuous control signal \cite{Andreas14Paths,matuszek12icml}.  We are unaware
 of past use of a semantic parser to predict network structures, or more
 generally to exploit the natural similarity between set-theoretic approaches to

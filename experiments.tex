@@ -1,19 +1,19 @@
 \section{Experiments: compositionality}
 
 We begin with a set of motivating experiments on synthetic data.
-Compositionality, and the ability to answer questions with arbitrarily complex
-structure, is an essential part of the kind of deep image understanding visual
-QA datasets are intended to test. At the same time, questions in most existing
-natural image datasets are quite simple, for the most part requiring that only
-one or two pieces of information be extracted from an image in order to answer
-it successfully, and with little evaluation of robustness in the presence of
-distractors (e.g. asking \emph{is there a blue house} in an image containing a
-red house and a blue car).
+Compositionality, and the corresponding ability to answer questions with
+arbitrarily complex structure, is an essential part of the kind of deep image
+understanding visual QA datasets are intended to test. At the same time,
+questions in most existing natural image datasets are quite simple, for the most
+part requiring that only one or two pieces of information be extracted from an
+image in order to answer it successfully, and with little evaluation of
+robustness in the presence of distractors (e.g. asking \emph{is there a blue
+house} in an image containing a red house and a blue car).
 
 As one of the primary goals of this work is to learn models for deep semantic
 compositionality, we have created \shapes, a synthetic dataset that places such
 compositional phenomena at the forefront. This dataset consists of complex
-questions about simple arrangements of colored shapes \autoref{fig:examples}.  Questions contain
+questions about simple arrangements of colored shapes (\autoref{fig:examples}).  Questions contain
 between two and four attributes, object types, or relationships.  There are 244
 questions and 15616 images in total, divided into train and test sets (with no
 overlap between the train and test sets). To eliminate mode-guessing as a
@@ -107,46 +107,55 @@ modules). Here our peformance doesn't suffer at all, and perhaps increases
 slightly; this demonstrates that our model is able to generalize to questions
 even more complicated than those it has seen during training. Using only
 linguistic information, the model extrapolates simple visual patterns it has
-learned to more complicated questions.
+learned to even harder questions.
 
 \section{Experiments: natural images}
 
 \begin{figure*}
   \centering
-  \begin{tabular}{*{5}{m{.17\textwidth}}}
-    \includegraphics[width=\linewidth]{fig/cocoqa1.jpg} &
-    \includegraphics[width=\linewidth]{fig/cocoqa2.jpg} &
-    \includegraphics[width=\linewidth]{fig/shapes1_big} &
-    \includegraphics[width=\linewidth]{fig/vqa1.jpg} &
-    \includegraphics[width=\linewidth]{fig/vqa2.jpg} \\
+  \renewcommand{\arraystretch}{1.4}
+  \begin{tabular}{>{\raggedright}*{5}{p{.17\textwidth}}}
+    \toprule
+    \includegraphics[width=\linewidth]{fig/thumb/cocoqa1.jpg} &
+    \includegraphics[width=\linewidth]{fig/thumb/cocoqa2.jpg} &
+    \includegraphics[width=\linewidth]{fig/shapes2_big} &
+    \includegraphics[width=\linewidth]{fig/thumb/vqa1.jpg} &
+    \includegraphics[width=\linewidth]{fig/thumb/vqa2.jpg} \\
     \emph{how many different lights in various different shapes and sizes?} &
     \emph{what is the color of the horse?} &
     \emph{is there a red shape above a circle?} &
     \emph{what color is the vase?} &
     \emph{is the bus full of passengers?} \\
+    \midrule
     four (four) &
     brown (brown) &
     yes (yes) &
-    green &
-    no \\
-    \midrule
-    \includegraphics[width=\linewidth]{fig/cocoqa3.jpg} &
-    \includegraphics[width=\linewidth]{fig/cocoqa4.jpg} &
+    green (green) &
+    no (no) \\
+    \bottomrule
+    \\[1em]
+    \toprule
+    \includegraphics[width=\linewidth]{fig/thumb/cocoqa3.jpg} &
+    \includegraphics[width=\linewidth]{fig/thumb/cocoqa4.jpg} &
     \includegraphics[width=\linewidth]{fig/bad_input_big} &
-    \includegraphics[width=\linewidth]{fig/vqa3.jpg} &
-    \includegraphics[width=\linewidth]{fig/vqa4.jpg} \\
+    \includegraphics[width=\linewidth]{fig/thumb/vqa3.jpg} &
+    \includegraphics[width=\linewidth]{fig/thumb/vqa4.jpg} \\
     \emph{what is stuffed with toothbrushes wrapped in plastic?} & 
     \emph{where does the tabby cat watch a horse eating hay?} &
     \emph{is a red shape blue?} &
     \emph{what material are the boxes made of?} &
     \emph{is this a clock?} \\
+    \midrule
     container (cup) &
     pen (barn) &
     yes (no) & 
     leather (cardboard) &
-    yes (no) 
+    yes (no) \\
+    \bottomrule
   \end{tabular}
-  \caption{Example output from our approach on different visual QA tasks.}
+  \caption{Example output from our approach on different visual QA tasks. The
+  top row shows correct answers, while the bottom row shows mistakes (correct
+  answers are given in parentheses).}
   \label{fig:examples}
 \end{figure*}
 
@@ -187,9 +196,9 @@ dataset. This is the largest resource of its kind, consisting of more than
 Data was generated by human annotators, in contrast to previous work, which has
 generated questions automatically from captions \cite{Ren15VQA}.  We learn our
 model using the standard train/test split, training only with those answers
-marked as high confidence.  The input to each \mod{attend} module is the the
-conv5 layer of an Oxford VGGNet \cite{Simonyan14VGG} after max-pooling. We do
-not fine-tune the VGGNet.
+marked as high confidence.  The visual input to the NMN is the conv5 layer of an
+Oxford VGGNet \cite{Simonyan14VGG} after max-pooling. We do not fine-tune the
+VGGNet.
 
 Results are shown in \autoref{tab:vqa-results}. As can be seen, we outperform the best published
 results on this task. A breakdown of our questions by answer type reveals that
@@ -197,16 +206,16 @@ our model performs especially well on questions answered by an object or
 attribute, but worse than a sequence baseline on the other two categories.
 Inspection of training-set accuracies suggests that performance in these
 categories is due to overfitting. A hybrid system which falls back to an NMN for
-these ``other'' category might even better results; future work within the NMN
-framework should focus on redesigning the \mod{classify-attention} module so it
-is less prone to overfitting.
+these ``other'' category might achieve even better results; future work within
+the NMN framework should focus on redesigning the \mod{classify-attention}
+module so it is less prone to overfitting.
 
 Inspection of parser outputs also suggests that there is substantial room to
 improve the system using a better parser. A hand inspection of the first 40
 50 parses in the training set suggests that most (80--90\%) of questions asking
-for simple properties of objects are correct, but more complicated questions are
+for simple properties of objects are correctly analyzed, but more complicated questions are
 more prone to picking up irrelevant predicates. For example \emph{are these
-people most likely experiencing a work day} is parsed as \mod{be(people,
+people most likely experiencing a work day?} is parsed as \mod{be(people,
 likely)}, when the desired analysis is \mod{is(people, work)}. As noted above,
 parser errors of this kind could be fixed with joint learning.
 
