@@ -11,55 +11,65 @@
     } \label{fig:teaser}
 \end{figure}
 
-This paper describes a framework for answering natural language questions with
-collections of jointly-trained neural ``modules'', using linguistic structure to
-dynamically assemble these modules into deep networks. Our initial focus is on
-visual question answering, a task with significant applications to human-robot
-interaction, search, and accessibility. Visual QA is the subject of a great deal
-of current research attention 
-\cite{antol15iccv,gao2015you,ma15arxiv,malinowski15iccv,ren2015image,yu15arxiv}, 
-requiring sophisticated understanding of both visual scenes and natural
-language.
+This paper describes \emph{neural module networks} (NMNs), a modular framework
+for visual quesiton answering. We answer natural language questions about images
+using collections of jointly-trained neural ``modules'', dynamically assembled
+into deep networks based on linguistic structure. 
 
-Specifically, given an image and an associated question (e.g.\ \emph{where is
-the dog?}), we wish to predict a corresponding answer (e.g.\ \emph{on the couch},
-or perhaps just \emph{couch}). Recent successful represent questions as
-bag-of-words \cite{} or read in the question using a single neural network
-\cite{malinowski15iccv}\cite{} and train a classifier on the full question
-representation and the full-image representation. In contrast to these
-monolithic approaches, another line of work for textual QA \cite{Liang13DCS} and
-image QA \cite{malinowski14nips} uses semantic parsers to decompose questions
-into logical expressions. These logical expressions are evaluated against a
-logical representation of the world, which may be provided directly or extracted
-from an image \cite{Krish2013Grounded}.
+The visual QA task has been the subject of a great deal of recent research
+attention
+\cite{antol15iccv,gao2015you,ma15arxiv,malinowski15iccv,ren2015image,yu15arxiv},
+and has significant applications to human-robot interaction, search, and
+accessibility.  Visual QA requires sophisticated understanding of both visual
+scenes and natural language.
+%
+Concretely, given an image and an associated question (e.g.\ \emph{where is
+the dog?}), we wish to predict a corresponding answer (e.g.\ \emph{on the
+couch}, or perhaps just \emph{couch}). Recent successful approaches represent
+questions as bags of words, or encode in the question using a recurrent neural
+network \cite{malinowski15iccv} and train a simple classifier on the encoded
+question and image. In contrast to these monolithic approaches, another line of
+work for textual QA \cite{Liang13DCS} and image QA \cite{malinowski14nips} uses
+semantic parsers to decompose questions into logical expressions. These logical
+expressions are evaluated against a purely logical representation of the world,
+which may be provided directly or extracted from an image
+\cite{Krish2013Grounded}.
 
 In this paper we draw from both lines of research, presenting a technique for
 integrating the representational power of neural networks with the flexible
 compositional structure afforded by symbolic approaches to semantics.  Rather
 than relying on a monolithic network structure to answer all questions, our
 approach assembles a network on the fly from a collection of specialized,
-jointly-learned modules (\autoref{fig:teaser}). In particular, we first analyze
-the question with an off-the-shelf semantic parser, and use this analysis to
+jointly-learned modules (\autoref{fig:teaser}). Rather than reasoning over
+truth values, we remain entirely in the domain of visual features and
+attentions.
+
+Our approach first analyzes
+each question with an off-the-shelf semantic parser, and uses this analysis to
 determine the basic computational units (attention, classification, etc.) needed
-to answer the question, as well as the relationships between them. In
-\autoref{fig:teaser}, we first produce an attention focused on the dog, which sends its output to
+to answer the question, as well as the relationships between the modules. In
+\autoref{fig:teaser}, we first produce an attention focused on the dog, which
+passes its output to
 a location classifier. Depending on the underlying structure, these messages
 passed between modules may be raw image features, attentions, or classification
 decisions; each module is determined by its input and output types.
-Different kinds of modules are marked with different
-colors in \Figref{fig:teaser}: for example the \mod{attend[$dog$]} module
-(green) produces a spatial heatmap while the \mod{classify[$where$]} (blue)
-recognizes what is in the image region localized by the attention heatmap.
-Importantly, all modules of a NMN are independent, which allows the computation
-to be different for each problem instance, and possibly unobserved during
-training. 
+Different kinds of modules are shown in different colors; attention modules
+(like \mod{dog}) are shown in green, while labeling modules (like
+\mod{where}) are shown in blue.
+%Different kinds of modules are marked with different
+%colors in \Figref{fig:teaser}: for example the \mod{attend[$dog$]} module
+%(green) produces a spatial heatmap while the \mod{classify[$where$]} (blue)
+%recognizes what is in the image region localized by the attention heatmap.
+Importantly, all modules of a NMN are independent and composable, which allows
+the computation to be different for each problem instance, and possibly
+unobserved during training. 
 %So that we can answer novel question at test time, such as
 %\emph{Where is the banana?}, even we only saw \emph{count} or
 %\emph{color} question about \emph{bananas} during training.  
-In addition to the NMN our final answer also incorporates the image scene
-knowledge (using a full frame CNN) and uses an  recurrent network (LSTM) to read
-the question, which has been shown to be important to model common sense
-knowledge and dataset biases \cite{malinowski15iccv}.
+Outside the NMN, our final answer incorporates the image scene knowledge
+(using a full frame CNN) and uses a recurrent network (LSTM) to read the
+question, which has been shown to be important to model common sense knowledge
+and dataset biases \cite{malinowski15iccv}.
 
 %Where previous work has
 %treated both the image and the question as inputs to a monolithic
@@ -83,24 +93,22 @@ knowledge and dataset biases \cite{malinowski15iccv}.
 %networks on the fly from an inventory of pre-trained components.
 
 We evaluate our approach on three visual question answering tasks. On the
-recently-released CocoQA \cite{yu15arxiv} and  VQA \cite{antol15iccv} datasets,
-we achieve results comparable to [better than] existing approaches, and show
+recently-released CocoQA \cite{yu15arxiv} and VQA \cite{antol15iccv} datasets,
+we achieve results comparable to or better than existing approaches, and show
 that our approach specifically outperforms previous work on questions with
 compositional structure (\eg requiring that an object be located and one of its
-attributes described). Using our model on questions where compositional
-structure plays a central role, and falling back to previous approaches
-elsewhere, we achieve new state-of-the-art results on both tasks. It turns out,
-however, that most of the questions in both datasets are quite simple, with
-little composition. To test our approach's ability to handle highly structured
-questions, we introduce a new dataset of synthetic images paired with complex
-questions involving spatial relations, set-theoretic reasoning, and shape and
-attribute recognition. On this dataset we outperform the previous state of the
-art by XXX.
+attributes described). It turns out, however, that many of the questions in both
+datasets are quite simple, with little composition or reasoning required. To
+test our approach's ability to handle harder questions, we introduce
+a new dataset of synthetic images paired with complex questions involving
+spatial relations, set-theoretic reasoning, and shape and attribute recognition.
+On this dataset we outperform competing approaches by as much as 25\% absolute
+aaccuracy.
 
 While all the applications considered in this paper involve visual question
 answering, the general architecture is potentially of broader usefulness, and
-might be more generally applied to referring expression resolution (XXX),
-question answering about natural language texts (XXX), or XXX.
+might be more generally applied to visual referring expression resolution (XXX)
+or question answering about natural language texts (XXX).
 
 %We evaluate our approach on two visual question answering tasks. First we
 %present a new synthetic image dataset paired with a complex set of queries
@@ -111,15 +119,15 @@ question answering about natural language texts (XXX), or XXX.
 %observe in particular that NMNs are able to make considerably better use of
 %small training sets.
 
-To summarize our contributions: We first propose neural module networks, a
+To summarize our contributions: We first describe neural module networks, a
 general architecture for discretely composing heterogeneous, jointly-trained
 neural modules into deep networks. Next, for the visual QA task specifically, we
 show how to construct NMNs based on the output of a semantic parser, and use
 these to successfully complete established visual question answering tasks.
 Finally, we introduce a new dataset of challenging, highly compositional
-questions about abstract shapes, and show that our approach outperforms previous
-models by as much as XXX. We will release this dataset, as well as code for all
-systems described in this paper upon publication.
+questions about abstract shapes, and show that our model again outperforms
+previous approaches. We will release this dataset, as well as code for all
+systems described in this paper, upon publication.
 
 \section{Motivations}
 
@@ -161,8 +169,8 @@ noisily in language. In particular, where a simple question like \emph{is this a
 truck?} requires us to retrieve only one piece of information from an image,
 more complicated questions, like \emph{how many objects are to the left of
 the toaster?} might require multiple processing steps. The compositional nature
-of language (XXX) means that the number of processing such steps is potentially
-unbounded. Moreover, multiple \emph{kinds} of processing might be
+of language (XXX) means that the number of such processing such steps is
+potentially unbounded. Moreover, multiple \emph{kinds} of processing might be
 required---repeated convolutions might identify a truck, but some kind of
 recurrent architecture is likely necessary to count up to arbitrary numbers.
 
@@ -202,8 +210,3 @@ objective.
 %recurrent network structures. We should not expect that we will be able to use
 %the same network layout for every problem, but do expect that parts of these
 %networks may be reused in different orders.
-
-\input{related}
-
-\input{model}
-

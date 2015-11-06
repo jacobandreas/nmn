@@ -2,7 +2,7 @@
 \section{Neural module networks for visual QA}
 
 %Given a pre-trained \emph{network layout predictor} $P$, 
-each training datum for this task can be thought of as a 4-tuple $(w, x, y)$, where
+Each training datum for this task can be thought of as a 3-tuple $(w, x, y)$, where
 \begin{itemize}
   \setlength\itemsep{0em}
   \item $w$ is a natural-language question
@@ -11,28 +11,28 @@ each training datum for this task can be thought of as a 4-tuple $(w, x, y)$, wh
   \item $y$ is an answer
 \end{itemize}
 A model is fully specified by a collection of modules $\{ m \}$, each with
-associated parameters $\theta_m$. Given $(w, x)$ as above, the model
-instantiates a network based on $w$, passes $x$ (and possibly $w$ again) as
+associated parameters $\theta_m$, and a \emph{network layout predictor} $P$
+which maps from strings to networks.. Given $(w, x)$ as above, the model
+instantiates a network based on $P(w)$, passes $x$ (and possibly $w$ again) as
 inputs, and obtains a distribution over labels (for the VQA task, we require the
-output module to be a classifier). Thus a model corresponds to a predictive
-distribution $p(y\ |\ w, x; \theta)$.
+output module to be a classifier). Thus a model ultimately encodes a predictive
+distribution $p(y\ |\ w,\ x;\ \theta)$.
 
-In the remainder of this section, we first describe the set of modules used for
-the VQA task, then explain the process by which questions are converted to
-network layouts.
+In the remainder of this section, we describe the set of modules used for the
+VQA task, then explain the process by which questions are converted to network
+layouts.
 
 \subsection{Modules}
 
-Our goal in this section is to identify a small set of modules that can be
-assembled into all the configurations necessary for our tasks. This corresponds
-to identifying a minimal set of composable vision primitives. The modules
-operate on three basic data types: images, unnormalized attentions, and labels.
-For the particular task and modules described in this paper, almost all
-interesting compositional phenomena occur in the space of attentions, and it is
-not unreasonable to characterize our contribution more narrowly as an
-``attention-composition'' network. Nevertheless, other types may be
-required in the future (for different new or for greater coverage in the VQA
-domain).
+Our goal here is to identify a small set of modules that can be assembled into
+all the configurations necessary for our tasks. This corresponds to identifying
+a minimal set of composable vision primitives. The modules operate on three
+basic data types: images, unnormalized attentions, and labels.  For the
+particular task and modules described in this paper, almost all interesting
+compositional phenomena occur in the space of attentions, and it is not
+unreasonable to characterize our contribution more narrowly as an
+``attention-composition'' network. Nevertheless, other types may be required in
+the future (for different new or for greater coverage in the VQA domain).
 
 First, some notation: module names are typeset in a {\tt fixed width font}, and
 are of the form \mod{TYPE[INSTANCE](ARG$_1$, \ldots)}. \mod{TYPE} is a
@@ -43,6 +43,7 @@ consideration---for example, \mod{attend[red]} locates red things, while
 instance level. Modules with no arguments implicitly take the image as input;
 higher-level arguments may also inspect the image.
 
+\subsubsection*{Attention}
 \[
   \mod{attend} : \mathit{Image} \to \mathit{Attention}
 \]
@@ -53,6 +54,7 @@ unnormalized attention. So, for example, the output of the module {\small\tt
 attend[dog]} is a matrix whose entries should be in regions of the image
 containing cats, and small everywhere else, as shown above.\\
 
+\subsubsection*{Re-attention}
 \[
   \mod{re-attend} : \mathit{Attention} \to \mathit{Attention}
 \]
@@ -63,6 +65,7 @@ for each $c$. So \mod{re-attend[above]} should take an attention and shift the
 regions of greatest activation upward (as above), while \mod{re-attend[not]}
 should move attention away from the active regions.\\%[1em]
 
+\subsubsection*{Combination}
 \[
   \mod{combine} : \mathit{Attention} \times \mathit{Attention} \to
   \mathit{Attention}
@@ -74,6 +77,7 @@ regions that are active in both inputs, while {\small\tt{combine[except]}}
 should be active where the first input is active and the second is
 inactive.\\[1em] 
 
+\subsubsection*{Classification}
 \[
   \mod{classify} : \mathit{Image} \times \mathit{Attention} \to
   \mathit{Label}
@@ -84,6 +88,7 @@ image and maps them to a distribution over labels. For example, {\small\tt
 classify[color]} should return a distribution over colors for the region
 attended to.\\[1em]
 
+\subsubsection*{Measurement}
 \[
   \mod{measure} : \mathit{Attention} \to \mathit{Label}
 \]
@@ -95,16 +100,17 @@ detected object, or counting sets of objects.
 
 \subsection{From strings to networks}
 
-In this section, we first describe how to map from natural language questions to
-\emph{layouts}, which specify both the set of modules used to answer a given
-question, and the connections between them. Next we describe how layouts are
-used to assemble the final prediction networks.
+The transformation from a natural language question to an instantiated neural
+network takes place in two steps.  First we map from natural language questions
+to \emph{layouts}, which specify both the set of modules used to answer a given
+question, and the connections between them. Next we use these layouts are used
+to assemble the final prediction networks.
 
-To predict layouts use standard tools pre-trained on existing linguistic
-resources to obtained structured representations of questions. Future work might
-focus on learning (or at least fine-tuning) this prediction process jointly with
-the rest of the system, though in fact off-the-shelf tools produce high-quality
-analyses for almost all the questions in our data.
+We use standard tools pre-trained on existing linguistic resources to obtained
+structured representations of questions. Future work might focus on learning (or
+at least fine-tuning) this prediction process jointly with the rest of the
+system, though in fact off-the-shelf tools produce high-quality analyses for
+almost all the questions in our data.
 
 \paragraph{Parsing}
 Specifically, we begin by parsing each question with the Stanford Parser (XXX)
@@ -190,8 +196,8 @@ or even mix visual and non-visual specifications in their queries:
   {\tt IS(cat) and date > 2014-11-5}
 \end{flushleft}
 
-Indeed, it is possible to construct this kind of ``visual SQL'' using exactly
-the models learned in this paper---once our system is trained, the learned
+Indeed, it is possible to construct this kind of ``visual SQL'' using precisely
+the approach described in this paper---once our system is trained, the learned
 modules for attention, classification, etc. can be assembled by any kind of
 outside user, without relying on natural language specifically.
 
@@ -236,11 +242,11 @@ sizes).
 It is important to emphasize that the labels we have assigned to distinguish
 instances of the same module type---\mod{cat}, \mod{and}, etc.---are a
 notational convenience, and do not reflect any manual specification of the
-behavior of the corresponding modules. \mod{detect[cat]} doesn't know it's
-supposed to be a cat recognizer (rather than a couch recognizer or a dog
-recognizer),
-and \mod{combine[and]} doesn't know it's supposed to compute intersections of
-attentions (rather than unions or differences). Instead, they acquire these
-behaviors as a byproduct of the end-to-end training procedure. As can be seen in
-Figure XXX, the image--answer pairs and parameter tying together encourage each
-module to specialize in the appropriate way.
+behavior of the corresponding modules. \mod{detect[cat]} is not fixed or even
+initialized %doesn't know it's
+as cat recognizer (rather than a couch recognizer or a dog recognizer), and
+\mod{combine[and]} isn't fixed to compute intersections of attentions (rather
+than unions or differences). Instead, they acquire these behaviors as a
+byproduct of the end-to-end training procedure. As can be seen in Figure XXX,
+the image--answer pairs and parameter tying together encourage each module to
+specialize in the appropriate way.

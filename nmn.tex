@@ -12,6 +12,7 @@
 \usepackage{graphicx}
 \usepackage{inconsolata}
 
+\usepackage{array}
 \usepackage{booktabs}
 %\usepackage{multicol}
 \usepackage{caption}
@@ -99,18 +100,20 @@ University of California, Berkeley\\
   question like \emph{where is the dog?} shares substructure with questions like
   \emph{what color is the dog?} and \emph{where is the cat?} This paper seeks to
   simultaneously exploit the representational capacity of deep networks and the
-  dynamic compositional structure of questions.  We describe a procedure for
+  compositional linguistic structure of questions.  We describe a procedure for
   constructing and learning \emph{neural module networks}, which compose
   collections of jointly-trained neural ``modules'' into deep networks for
   question answering. Our approach decomposes questions into their linguistic
   substructures, and uses these structures to dynamically instantiate modular
   networks (with reusable components for recognizing dogs, classifying colors,
   etc.). The resulting compound networks are jointly trained. We evaluate our
-  approach on three challenging datasets for visual question answering,
-  achieving several state-of-the-art results.
+  approach on a variety of challenging datasets for visual question answering,
+  achieving state-of-the-art results on both the VQA natural image dataset and a
+  new dataset of complex questions about abstract shapes.
 \end{abstract}
 
 \input{intro}
+\input{related}
 \input{model}
 \input{experiments}
 \input{conclusion}

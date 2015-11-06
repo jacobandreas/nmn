@@ -1,6 +1,40 @@
 \section{Experiments: natural images}
 
 \begin{figure*}
+  \centering
+  \begin{tabular}{*{5}{m{.17\textwidth}}}
+    \includegraphics[width=\linewidth]{fig/cocoqa1.jpg} &
+    \includegraphics[width=\linewidth]{fig/cocoqa2.jpg} &
+    \includegraphics[width=\linewidth]{fig/shapes1_big} &
+    \includegraphics[width=\linewidth]{fig/vqa1.jpg} &
+    \includegraphics[width=\linewidth]{fig/vqa2.jpg} \\
+    \emph{how many different lights in various different shapes and sizes?} &
+    \emph{what is the color of the horse?} &
+    \emph{is there a red shape above a circle?} &
+    \emph{what color is the vase?} &
+    \emph{is the bus full of passengers?} \\
+    four (four) &
+    brown (brown) &
+    yes (yes) &
+    green &
+    no \\
+    \midrule
+    \includegraphics[width=\linewidth]{fig/cocoqa3.jpg} &
+    \includegraphics[width=\linewidth]{fig/cocoqa4.jpg} &
+    &
+    \includegraphics[width=\linewidth]{fig/vqa3.jpg} &
+    \includegraphics[width=\linewidth]{fig/vqa4.jpg} \\
+    \emph{what is stuffed with toothbrushes wrapped in plastic?} & 
+    \emph{where does the tabby cat watch a horse eating hay?} &
+    ?? & 
+    \emph{what material are the boxes made of?} &
+    \emph{is this a clock?} \\
+    container (cup) &
+    pen (barn) &
+    & 
+    leather (cardboard) &
+    yes (no) 
+  \end{tabular}
   \caption{Example output from our approach on thre visual QA tasks.}
 \end{figure*}
 
@@ -34,7 +68,7 @@ so it is less prone to overfitting.
     \midrule
     LSTM & 78.20 & 35.7 & 26.6 & 48.8 \\
     VIS+LSTM & 78.9 & 35.2 & 36.4 & 53.7 & 54.1 \\
-    NMN & \\
+    NMN & 77.7 & 36.8 & 39.2 & 54.8 & \bf 55.1 \\
     \bottomrule
   \end{tabular}
   \caption{VQA results}
@@ -57,10 +91,10 @@ As above, the inputs come from a VGGNet without fine-tuning.
     \toprule
     System & Object & Location & Color & Number & All \\
     \midrule
-    IMG+BOW & 58.7 & 49.4 & 52.0 & 44.1 & 55.9 \\
+    IMG+BOW     & 58.7 & 49.4 & 52.0 & 44.1 & 55.9 \\
     2-VIS+BLSTM & 58.2 & 47.3 & 49.5 & 44.8 & 55.1 \\
-    NMN (indep) & 57.5 & 44.2 & & 43.5 & \\
-    NMN & 57.9 & 48.8 & 54.3 & 40.5 & 55.5 \\
+    %NMN (indep) & 57.5 & 44.2 & 56.5 & 43.5 & 55.5 \\
+    NMN         & 57.9 & 48.8 & 54.3 & 40.5 & 55.5 \\
     \bottomrule
   \end{tabular}
   \caption{\cocoqa results}
@@ -90,20 +124,20 @@ both spatial and logical relations among sets of objects.
 
 XXX babyai
 
-\begin{figure}
-  \centering
-  \emph{Is there a red shape above a circle?} \\[1em]
-  \begin{tabular}{ccc}
-    \includegraphics[width=0.25\columnwidth]{fig/shapes1_big} &
-    \includegraphics[width=0.25\columnwidth]{fig/shapes2_big} &
-    \includegraphics[width=0.25\columnwidth]{fig/shapes3_big} \\
-    no & yes & yes
-  \end{tabular}
-  \caption{Example question, images, and answers from the \shapes dataset.
-    Answering this question requires being able to recognize an object
-    (\emph{circle}), an attribute (\emph{red}), and a spatial relation
-    (\emph{above}), and compare sets of objects previously retrieved.}
-\end{figure}
+%\begin{figure}
+%  \centering
+%  \emph{Is there a red shape above a circle?} \\[1em]
+%  \begin{tabular}{ccc}
+%    \includegraphics[width=0.25\columnwidth]{fig/shapes1_big} &
+%    \includegraphics[width=0.25\columnwidth]{fig/shapes2_big} &
+%    \includegraphics[width=0.25\columnwidth]{fig/shapes3_big} \\
+%    no & yes & yes
+%  \end{tabular}
+%  \caption{Example question, images, and answers from the \shapes dataset.
+%    Answering this question requires being able to recognize an object
+%    (\emph{circle}), an attribute (\emph{red}), and a spatial relation
+%    (\emph{above}), and compare sets of objects previously retrieved.}
+%\end{figure}
 
 
 %\begin{figure}
@@ -121,11 +155,11 @@ XXX babyai
   \centering
   \begin{tabular}{ccccc}
     \toprule
-    System & All & Size 4 & Size 5 & Size 6 \\
+    System & Size 4 & Size 5 & Size 6 & All \\
     \midrule
-    IMG+BOW & \\
-    VIS+LSTM &  \\
-    NMN & 90.62* & 89.69* & 92.36* & 85.16* \\
+    VIS+LSTM & 71.9 & 62.5 & 61.7 & 65.3 \\
+    NMN      & 89.7 & 92.4 & 85.2 & \bf 90.6 \\
+    NMN (easy) & 97.7 & 91.1 & 89.7 & \bf 90.8 \\
     \bottomrule
   \end{tabular}
   \caption{Synth data results}
