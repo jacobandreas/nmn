@@ -1,17 +1,12 @@
 \documentclass[10pt,twocolumn,letterpaper]{article}
 
-% distinction between parser / layout generator (other applications may provide
-% structured queries)
 % more motivation
 % spatial heatmap / attention NOT detection
 % not classify but recognize
 % ``structured'' = easy
 % how general is the parser? (where will it fail, are we losing perf., etc.)
-% explain module notation
-% symbol in bracketes
 % above vs not
 % real figures for inplace
-% rules are ``simple''
 
 \usepackage{cvpr}
 \usepackage{times}
@@ -19,6 +14,9 @@
 \usepackage{graphicx}
 
 \usepackage{booktabs}
+%\usepackage{multicol}
+\usepackage{caption}
+\usepackage{subcaption}
 
 %\usepackage{algorithm}
 %\usepackage{algorithmic}
@@ -51,6 +49,8 @@
 \include{defines}
 % Include other packages here, before hyperref.
 
+%\captionsetup{belowskip=8pt}
+
 % If you comment hyperref and then uncomment it, you should delete
 % egpaper.aux before re-running latex.  (Or just hit 'q' on the first latex
 % run, let it finish, and you should be clear).
@@ -69,6 +69,7 @@
 \newcommand{\mod}[1]{{\small\texttt{#1}}}
 \newcommand{\todo}{\textcolor{red}}
 \newcommand{\shapes}{{\textsc{shapes}}\xspace}
+\newcommand{\cocoqa}{{\textsc{CocoQA}}\xspace}
 \newcommand{\marcus}[1]{\textcolor{blue}{Marcus: #1}}
 %%%%%%%%% TITLE
 \title{Deep Compositional Question Answering with Neural Module Networks}
@@ -225,7 +226,15 @@ not unreasonable to characterize our contribution more narrowly as an
 required in the future (for different new or for greater coverage in the VQA
 domain).
 
-\pagebreak
+First, some notation: module names are typeset in a {\tt fixed width font}, and
+are of the form \mod{TYPE[INSTANCE](ARG$_1$, \ldots)}. \mod{TYPE} is a
+high-level module type (attention, classification, etc.) of the kind described
+in this section. \mod{INSTANCE} is the particular instance of the model under
+consideration---for example, \mod{attend[red]} locates red things, while
+\mod{attend[dog]} locates dogs. Weights may be shared at both the type and
+instance level. Modules with no arguments implicitly take the image as input;
+higher-level arguments may also inspect the image.
+
 \paragraph{Attend}
 
 An attention module \mod{attend[$x$]} convolves every position in the input
@@ -274,6 +283,7 @@ focus on learning (or at least fine-tuning) this prediction process jointly with
 the rest of the system, though in fact off-the-shelf tools produce high-quality
 analyses for almost all the questions in our data.
 
+\paragraph{Parsing}
 Specifically, we begin by parsing each question with the Stanford Parser (XXX)
 to obtain a universal dependency representation (XXX). Dependency parses express
 grammatical relations between parts of a sentence (e.g.\ between objects and
@@ -285,11 +295,13 @@ question (XXX and more). This gives a simple logical form expressing (the
 primary) part of the sentences meaning. For example, \emph{what is standing in
 the field} becomes \mod{what(stand)}; \emph{what color is the truck} becomes
 \mod{color(truck)}, and \emph{is there a circle next to a square} becomes
-\mod{is(cicle, next-to(square))}. The code for peforming this transformation is
-simple, and provided in the accompanying software distribution.
+\mod{is(cicle, next-to(square))}. It is easiest to think of these
+representations as pieces of a variable-free cominatory logic \cite{Liang13DCS};
+every leaf is implicitly a function taking the image as input. The code for
+transforming parse trees to structured queries is provided in the accompanying
+software package.
 
-XXX something about combinator logics / leaves of the tree.
-
+\paragraph{Layout}
 These logical forms already determine the structure of the predicted network,
 but not the identities of the modules that compose it. This final assignment of
 modules is fully determined by the structure of the parse. All leaves become
@@ -301,13 +313,44 @@ each training example a network structure, an input image, and an output label.
 In many cases, these network structures are different, but have tied parameters.
 Networks which have the same high-level structure but different instantiations
 of individual modules (for example \emph{what color is the cat}---{\small\tt
-classify[color](detect[cat])} and \emph{where is the truck}---{\small\tt
-classify[where](detect[truck])}) can be processed in the same batch, resulting
+classify[color](attend[cat])} and \emph{where is the truck}---{\small\tt
+classify[where](attend[truck])}) can be processed in the same batch, resulting
 in efficient computation.
 
+\paragraph{Generalizations}
+
+It is easy to imagine applications where the input to the layout stage comes
+from something other than a natural language parser. Users of an image database,
+for example, might write SQL-like queries directly in order to specify their
+requirements precisely ({\tt EXISTS(cat) AND NOT(EXISTS(dog))}), or even mix
+visual and non-visual specifications in their queries ({\tt EXISTS(cat) and DATE
+> 2014-11-5}).
+
+Indeed, it is possible to construct this kind of ``visual SQL'' using exactly
+the models learned in this paper---once our system is trained, the learned
+modules for attention, classification, etc. can be assembled by any kind of
+outside user, without relying on natural language specifically.
 
 \begin{figure*}
+  \begin{subfigure}[t]{0.4\textwidth}
+    \includegraphics[width=\textwidth]{fig/full1}
+    \caption{NMN for answering the question \emph{What color is
+    his tie?}. The \mod{attend[tie]} module first predicts a heatmap
+    corresponding to the location of the tie. Next, the \mod{classify[color]}
+    module uses this heatmap to produce a weighted average of image features,
+  which are finally used to predict an output label.}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[t]{0.55\textwidth}
     \includegraphics[width=\textwidth]{fig/full2}
+    \caption{NMN for answering the question \emph{Is there a red shape above a
+    circle?}. The two \mod{attend} modules locate the red shapes and circles,
+    the \mod{re-attend[above]} shifts the attention above the circles, the
+    \emph{combine} module computes their intersection, and the
+    \mod{exists} module inspects the final attention and determines that it is
+    non-empty.}
+  \end{subfigure}
+  \caption{Sample NMNs for question answering about natural images and shapes.}
 \end{figure*}
 
 \section{Learning}
@@ -321,13 +364,15 @@ Because of the dynamic network structures used to answer questions, some weights
 are updated much more frequently than others. For this reason we found that
 learning algorithms with adaptive per-weight learning rates performed
 substantially better than simple gradient descent. All the experiments described
-below use AdaDelta (XXX) (thus there was no hyperparameter search over step sizes).
+below use AdaDelta (XXX) (thus there was no hyperparameter search over step
+sizes).
 
 It is important to emphasize that the labels we have assigned to distinguish
 instances of the same module type---\mod{cat}, \mod{and}, etc.---are a
 notational convenience, and do not reflect any manual specification of the
 behavior of the corresponding modules. \mod{detect[cat]} doesn't know it's
-supposed to be a cat detector (rather than a couch detector or a dog detector),
+supposed to be a cat recognizer (rather than a couch recognizer or a dog
+recognizer),
 and \mod{combine[and]} doesn't know it's supposed to compute intersections of
 attentions (rather than unions or differences). Instead, they acquire these
 semantics as a byproduct of the end-to-end training procedure. As can be seen in
@@ -338,27 +383,57 @@ module to specialize in the appropriate way.
 %convolutional network is suitable for most detection and classification tasks,
 %but counting to arbitrary numbers probably requires a recurrent network.
 
+
 \section{Experiments: natural images}
 
 For both experiments in this section, the input to each \mod{attend} module is
 the the Conv XXX layer of an Oxford VGGNet (XXX) after max-pooling. We do not
 fine-tune the VGGNet.
 
+\paragraph{VQA}
+We begin with a set of experiments on the recently-released VQA dataset. This
+dataset consists of more than 200,000 images, each paired with three questions
+and ten answers per question. Data was generated by XXX, more corpus flavor
+text. We train our model using the standard train/test split, training only with
+those answers marked as high confidence.
+
+Results are shown in Table XXX. As can be seen, we achieve state-of-the-art
+results on this task. A breakdown of our questions by answer type reveals that
+our model performs especially well on questions answered by an object or
+attribute, but worse than a sequence baseline on the other two categories.
+Inspection of training-set accuracies suggests that performance in these
+categories is due to overfitting. A hybrid system which falls back to an NMN
+for these ``other'' category achieves even better results; future work within
+the NMN framework might focus on redesigning the \mod{classify-attention} module
+so it is less prone to overfitting.
+
 \begin{table}
   \footnotesize
   \center
-  \begin{tabular}{cccccc}
+  \begin{tabular}{lccccc}
     \toprule
-    System & All & Yes/No & Color & Number & Other \\
+    & \multicolumn{4}{c}{test-dev} & test \\
+    \cmidrule(lr){2-5} \cmidrule(lr){6-6}
+    & All & Yes/No & Number & Other & All \\
     \midrule
-    IMG+BOW & 55.92 & 58.66 & 49.39 & 51.96 & 44.10 \\
-    2-VIS+BLSTM & 55.09 & 58.17 & 47.34 & 49.53 & 44.79 \\
-    NMN (indep) \\
-    NMN \\
+    LSTM & 48.8 & 78.20 & 35.7 & 26.6 \\
+    VIS+LSTM & 53.7 & 78.9 & 35.2 & 36.4 & \\
+    NMN & \\
     \bottomrule
   \end{tabular}
-  \caption{CocoQA results}
+  \caption{VQA results}
 \end{table}
+
+\paragraph{\cocoqa}
+We also evaluate our system on the smaller \cocoqa dataset introduced by Ren
+XXX. This is similar in spirit to the VQA corpus, but uses questions
+automatically generated from captions rather than directly elicited from users.
+The \cocoqa dataset features four categories of question: objects, locations,
+colors and numbers. Our results are shown in Table XXX. As can be seen, the NMN
+model substantially outperforms the baselines in the color category, but is
+slightly worse in the others (this again appears to be due to overfitting). As
+above, if we replace our predictions in the count category only with a simple
+text baseline, we again achieve new state-of-the-art results on this task.
 
 \begin{table}
   \footnotesize
@@ -367,36 +442,36 @@ fine-tune the VGGNet.
     \toprule
     System & All & Object & Location & Color & Number \\
     \midrule
-    VIS+LSTM & 53.74 & 78.94 & 43.53 & 36.42 & \\
-    NMN \\
+    IMG+BOW & 55.9 & 58.7 & 49.4 & 52.0 & 44.1 \\
+    2-VIS+BLSTM & 55.1 & 58.2 & 47.3 & 49.5 & 44.8 \\
+    NMN (indep) \\
+    NMN & 55.5 & 57.9 & 48.8 & 54.3 & 40.5 \\
     \bottomrule
   \end{tabular}
-  \caption{VQA results}
+  \caption{\cocoqa results}
 \end{table}
-
 
 \section{Experiments: compositionality}
 
-Past work [Ren paper] has achieved state-of-the-art results on the CocoQA
+Past work [Ren paper] has achieved state-of-the-art results on the \cocoqa
 dataset using a bag-of-words model . This is consistent with [VQA paper]'s
 observation that image features are most important for simple object- and
 activity-recognition questions, and that they make little difference for other
 categories (like yes/no questions). Taken together, these results suggest that
 existing natural image datasets primarily require simple object- and attribute
-detection, with limited importance attached to spatial relations and other
+recognition, with limited importance attached to spatial relations and other
 highly compositional phenomena.
 
 As one of the primary goals of this work is to learn models for deep semantic
 compositionality, we have created an additional dataset that places such
-compositional phenomena at the forefront. This dataset consists of highly
-structured questions about simple arrangements of colored shapes [XXX].
-Questions contain between two and four attributes, object types, or
-relationships.  There are 244 questions and 15616 images in total, divided into
-train and test sets (with no overlap between the train and test sets).  To
-eliminate mode-guessing as a viable strategy, all questions have a yes-or-no
-answer, but good performance requires that the system learn to recognize shapes
-and colors, and understand both spatial and logical relations among sets of
-objects.
+compositional phenomena at the forefront. This dataset consists of complex
+questions about simple arrangements of colored shapes [XXX].  Questions contain
+between two and four attributes, object types, or relationships.  There are 244
+questions and 15616 images in total, divided into train and test sets (with no
+overlap between the train and test sets).  To eliminate mode-guessing as a
+viable strategy, all questions have a yes-or-no answer, but good performance
+requires that the system learn to recognize shapes and colors, and understand
+both spatial and logical relations among sets of objects.
 
 XXX babyai
 
@@ -404,9 +479,9 @@ XXX babyai
   \centering
   \emph{Is there a red shape above a circle?} \\[1em]
   \begin{tabular}{ccc}
-    \includegraphics[width=0.25\columnwidth]{fig/shapes1} &
-    \includegraphics[width=0.25\columnwidth]{fig/shapes2} &
-    \includegraphics[width=0.25\columnwidth]{fig/shapes3} \\
+    \includegraphics[width=0.25\columnwidth]{fig/shapes1_big} &
+    \includegraphics[width=0.25\columnwidth]{fig/shapes2_big} &
+    \includegraphics[width=0.25\columnwidth]{fig/shapes3_big} \\
     no & yes & yes
   \end{tabular}
   \caption{Example question, images, and answers from the \shapes dataset.
@@ -416,15 +491,15 @@ XXX babyai
 \end{figure}
 
 
-\begin{figure}
-  \centering
-  \begin{tabular}{cc}
-    \includegraphics[width=0.25\columnwidth]{fig/shapes_in1} &
-    \includegraphics[width=0.25\columnwidth]{fig/shapes_out1} \\
-    \includegraphics[width=0.25\columnwidth]{fig/shapes_in2} &
-    \includegraphics[width=0.25\columnwidth]{fig/shapes_out2} \\
-  \end{tabular}
-\end{figure}
+%\begin{figure}
+%  \centering
+%  \begin{tabular}{cc}
+%    %\includegraphics[width=0.25\columnwidth]{fig/shapes_in1} &
+%    %\includegraphics[width=0.25\columnwidth]{fig/shapes_out1} \\
+%    \includegraphics[width=0.25\columnwidth]{fig/shapes_in2} &
+%    \includegraphics[width=0.25\columnwidth]{fig/shapes_out2} \\
+%  \end{tabular}
+%\end{figure}
 
 \begin{table}
   \footnotesize

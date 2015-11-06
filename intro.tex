@@ -1,11 +1,13 @@
 \section{Introduction} 
 
 \begin{figure}[t] \begin{center}
-    \includegraphics[width=\linewidth]{fig/teaser} \end{center} \caption{Our
-    approach answers questions about images, it automatically instantiates
-    different modules of neural networks depending on the question. An
-    additional LSTM provides sentence context and learns common sense / dataset
-  bias.} \label{fig:teaser}
+    \includegraphics[width=\linewidth]{fig/teaser} \end{center} \caption{
+      A schematic representation of our full model---the shaded gray area is a
+      neural module network. Our approach uses a natural language parser to
+      dynamically lay out a deep network composed of reusable modules. For
+      visual question answering tasks, an additional sequence model provides
+      sentence context and learns common-sense knowledge.
+    } \label{fig:teaser}
 \end{figure}
 
 This paper describes a framework for answering natural language questions with
@@ -37,9 +39,9 @@ than relying on a monolithic network structure to answer all questions, our
 approach assembles a network on the fly from a collection of specialized,
 jointly-learned modules (\autoref{fig:teaser}). In particular, we first analyze
 the question with an off-the-shelf semantic parser, and use this analysis to
-determine the basic computational units (detection, classification, etc.) needed
+determine the basic computational units (attention, classification, etc.) needed
 to answer the question, as well as the relationships between them. In
-\autoref{fig:teaser}, we first produce a dog detector, which sends its output to
+\autoref{fig:teaser}, we first produce an attention focused on the dog, which sends its output to
 a location classifier. Depending on the underlying structure, these messages
 passed between modules may be raw image features, attentions, or classification
 decisions; each module is determined by its input and output types.

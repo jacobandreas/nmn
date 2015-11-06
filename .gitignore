@@ -7,3 +7,4 @@
 *.log
 /tmp/
 /nmn.synctex.gz
+.DS_Store
