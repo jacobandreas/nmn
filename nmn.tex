@@ -2,8 +2,6 @@
 
 % more motivation
 % spatial heatmap / attention NOT detection
-% not classify but recognize
-% ``structured'' = easy
 % how general is the parser? (where will it fail, are we losing perf., etc.)
 % above vs not
 % real figures for inplace
@@ -12,11 +10,13 @@
 \usepackage{times}
 \usepackage{epsfig}
 \usepackage{graphicx}
+\usepackage{inconsolata}
 
 \usepackage{booktabs}
 %\usepackage{multicol}
 \usepackage{caption}
 \usepackage{subcaption}
+
 
 %\usepackage{algorithm}
 %\usepackage{algorithmic}
@@ -56,7 +56,7 @@
 % run, let it finish, and you should be clear).
 \usepackage[pagebackref=true,breaklinks=true,letterpaper=true,colorlinks,bookmarks=false]{hyperref}
 
-% \cvprfinalcopy % *** Uncomment this line for the final submission
+ %\cvprfinalcopy % *** Uncomment this line for the final submission
 
 \def\cvprPaperID{1114} % *** Enter the CVPR Paper ID here
 \def\httilde{\mbox{\tt\raisebox{-.5ex}{\symbol{126}}}}
@@ -74,20 +74,20 @@
 %%%%%%%%% TITLE
 \title{Deep Compositional Question Answering with Neural Module Networks}
 
-\author{First Author\\
-Institution1\\
-Institution1 address\\
-{\tt\small firstauthor@i1.org}
+\author{Jacob Andreas \and Marcus Rohrbach \and Trevor Darrell \and Dan Klein \\
+Computer Science Division\\
+University of California, Berkeley\\
+{\tt\small \{jda,rohrbach,trevor,klein\}@cs.berkeley.edu}
 % For a paper whose authors are all at the same institution,
 % omit the following lines up until the closing ``}''.
 % Additional authors and addresses can be added with ``\and'',
 % just like the second author.
 % To save space, use either the email address or home page, not both
-\and
-Second Author\\
-Institution2\\
-First line of institution2 address\\
-{\tt\small secondauthor@i2.org}
+%\and
+%Second Author\\
+%Institution2\\
+%First line of institution2 address\\
+%{\tt\small secondauthor@i2.org}
 }
 
 \maketitle
@@ -95,23 +95,22 @@ First line of institution2 address\\
 
 %%%%%%%%% ABSTRACT
 \begin{abstract}
-  Visual question answering differs from many other vision tasks in that the
-  computational structure necessary to produce an answer is not fixed, but
-  instead varies depending on the question. \marcus{I am confused with this sentence. It is stated like known fact, but prior work says differently\ldots and that what we want to show in the paper.} 
-  At the same time, the task is
-  fundamentally compositional in nature---answering a question like \emph{where
-  is the dog?} shares substructure with questions like \emph{what color is the
-  dog?} and \emph{where is the cat?}. This paper seeks to simultaneously exploit the
-  representational capacity of deep networks and the dynamic compositional
-  structure of questions.  We describe a procedure for constructing and learning
-  \emph{neural module networks}, which compose collections of jointly-trained
-  neural ``modules'' into deep networks for question answering. Our approach
-  decomposes questions into their linguistic substructures, and uses these
-  structures to dynamically instantiate modular networks (with reusable
-  components for recognizing dogs, classifying colors, etc.). The resulting
-  compound networks are jointly trained. We evaluate our approach on three
-  challenging datasets for visual question answering, achieving several
-  state-of-the-art results.
+  %Visual question answering differs from many other vision tasks in that the
+  %computational structure necessary to produce an answer is not fixed, but
+  %instead varies depending on the question. \marcus{I am confused with this sentence. It is stated like known fact, but prior work says differently\ldots and that what we want to show in the paper.} 
+  Visual question answering is fundamentally compositional in nature---a
+  question like \emph{where is the dog?} shares substructure with questions like
+  \emph{what color is the dog?} and \emph{where is the cat?} This paper seeks to
+  simultaneously exploit the representational capacity of deep networks and the
+  dynamic compositional structure of questions.  We describe a procedure for
+  constructing and learning \emph{neural module networks}, which compose
+  collections of jointly-trained neural ``modules'' into deep networks for
+  question answering. Our approach decomposes questions into their linguistic
+  substructures, and uses these structures to dynamically instantiate modular
+  networks (with reusable components for recognizing dogs, classifying colors,
+  etc.). The resulting compound networks are jointly trained. We evaluate our
+  approach on three challenging datasets for visual question answering,
+  achieving several state-of-the-art results.
 %Answering a question about an image, is a challenging task which requires understanding the question, grounding it in the image and jointly reasoning about the image content to produce a correct answer. Intuitively, this task is compositional in nature, \ie answering \emph{where the dog} in an image is can partially share an representation with \emph{which color the dog} is or \emph{where the cat} is. On the other hand, learning deep neural networks has shown impressive progress in question answering and related tasks. Consequently, we propose \emph{\nmn}, which composes several, jointly trained neural modules to answer questions about images. Specifically our approaches decomposes questions into their linguistic substructures and instantiates corresponding neural ``modules'' (\eg \emph{where, which color, dog}) which are stacked to a deep network. The resulting compound
 %  networks are then jointly trained, whose composable neural ``modules'' 
 %  can be dynamically remixed to interpret also novel questions. We evaluate our approach
@@ -123,62 +122,48 @@ First line of institution2 address\\
 
 \section{Motivations}
 
-Many tasks in computer vision, including recognition, detection, and captioning,
-share common substructure. For example, we might schematically express the
-sequence of computations performed by a recognizer as
-\begin{flushleft}
-  \mod{classify(pickMostRelevant(detectObjects))}
-\end{flushleft}
-or a detector as
-\begin{flushleft}
-  \mod{drawBoundaries(detectObjects)}
-\end{flushleft}
+%Many tasks in computer vision, including recognition, detection, and captioning,
+%share common substructure. For example, we might schematically express the
+%sequence of computations performed by a recognizer as
+%\begin{flushleft}
+%  \mod{classify(pickMostRelevant(detectObjects))}
+%\end{flushleft}
+%or a detector as
+%\begin{flushleft}
+%  \mod{drawBoundaries(detectObjects)}
+%\end{flushleft}
+%
+%In practice the picture is not this clean---classification or detection is
+%performed end-to-end by a single neural network, and the boundaries between
+%these ``phases'' are not clearly defined. Nevertheless we might expect \textit{a
+%priori} that a network used for classification might expose intermediate
+%representations useful for building a detector. 
+We begin with two simple observations. First, that there is no single ``best
+network'' for all purposes---state-of-the-art performance on the full range of
+computer vision tasks that are studied requires a variety of different deep
+network topologies. Second, though different networks are used for different
+purposes, it is commonplace to initialize systems for many of vision tasks with
+a prefix of a network trained for classification \cite{Long14FullyConvolutional} XXX. 
+This has been shown to substantially reduce training time and improve accuracy. 
 
-In practice the picture is not this clean---classification or detection is
-performed end-to-end by a single neural network, and the boundaries between
-these ``phases'' are not clearly defined. Nevertheless we might expect \textit{a
-priori} that a network used for classification might expose intermediate
-representations useful for building a detector. Indeed, it is now commonplace to
-initialize systems for a variety of vision tasks with a prefix of a network
-trained for classification \cite{Long14FullyConvolutional}. This has been shown
-to substantially reduce training time and improve accuracy. So while network
-structures are not \emph{universal} (in the sense that the same network is
-appropriate for all problems), they are at least empirically \emph{modular} (in
-the sense that intermediate representations for one task are useful for many
-others). 
+So while network structures are not \emph{universal} (in the sense that the same
+network is appropriate for all problems), they are at least empirically
+\emph{modular} (in the sense that intermediate representations for one task are
+useful for many others). 
 
 Can we generalize this idea in a way that is useful for question answering?
 Rather than thinking of question answering as a problem of learning a single
 function to map from questions and contexts to answers, it's perhaps useful to
 think of it as a highly-multitask learning setting, where each problem instance
 is associated with a novel task, and the identity of that task is expressed only
-noisily in language. If we consider a few examples of questions:
-XXX
-%\begin{center}
-%  \begin{tabular}{ll}
-%    {\it how many black cats?} & \mod{count(and(detect[cat], detect[black]))} \\
-%    {\it what color is the cat?} & \mod{classify[color](detect[cat])} \\
-%    {\it what color is the dog?} & \mod{classify[color](detect[dog])} \\
-%    {\it is there a dog?} & \mod{exists(detect[dog])}
-%  \end{tabular}
-%\end{center}
-we again see that there is common computational substructure involved in solving
-the associated tasks.  With sub-networks for computing \mod{detect[cat]},
-\mod{classify}, \mod{count}, etc., we can in principle answer
-questions with novel structure like---e.g.\ {\it is there a black
-dog?}---without any additional training data.
-
-Note in particular that we expect these modules to differ not only in their
-parameters, but more fundamentally in their topologies. Intuitively,
-\mod{detect[cat]} should take an image as input, perform some
-fully-convolutional operation, and output an attention (understood as a
-distribution over positions in the image), while {\small\tt classify[color]}
-should take both the input image and such an attention, and map to a
-distribution over labels. Some computations require convolutional operations,
-some require fully-connected operations, and some (like counting) may require
-recurrent network structures. We should not expect that we will be able to use
-the same network layout for every problem, but do expect that parts of these
-networks may be reused in different orders.
+noisily in language. In particular, where a simple question like \emph{is this a
+truck?} requires us to retrieve only one piece of information from an image,
+more complicated questions, like \emph{how many objects are to the left of
+the toaster?} might require multiple processing steps. The compositional nature
+of language (XXX) means that the number of processing such steps is potentially
+unbounded. Moreover, multiple \emph{kinds} of processing might be
+required---repeated convolutions might identify a truck, but some kind of
+recurrent architecture is likely necessary to count up to arbitrary numbers.
 
 Thus our goal in this paper is to specify a framework for modular, composable,
 jointly-trained neural networks. In this framework, we first predict the
@@ -189,171 +174,39 @@ than trained in isolation, and specialization to individual tasks (identifying
 properties, spatial relations, etc.) arises naturally from the training
 objective.
 
+%If we consider a few examples of questions:
+%XXX
+%\begin{center}
+%  \begin{tabular}{ll}
+%    {\it how many black cats?} & \mod{count(and(detect[cat], detect[black]))} \\
+%    {\it what color is the cat?} & \mod{classify[color](detect[cat])} \\
+%    {\it what color is the dog?} & \mod{classify[color](detect[dog])} \\
+%    {\it is there a dog?} & \mod{exists(detect[dog])}
+%  \end{tabular}
+%\end{center}
+%we again see that there is common computational substructure involved in solving
+%the associated tasks.  With sub-networks for computing \mod{detect[cat]},
+%\mod{classify}, \mod{count}, etc., we can in principle answer
+%questions with novel structure like---e.g.\ {\it is there a black
+%dog?}---without any additional training data.
+%
+%Note in particular that we expect these modules to differ not only in their
+%parameters, but more fundamentally in their topologies. Intuitively,
+%\mod{detect[cat]} should take an image as input, perform some
+%fully-convolutional operation, and output an attention (understood as a
+%distribution over positions in the image), while {\small\tt classify[color]}
+%should take both the input image and such an attention, and map to a
+%distribution over labels. Some computations require convolutional operations,
+%some require fully-connected operations, and some (like counting) may require
+%recurrent network structures. We should not expect that we will be able to use
+%the same network layout for every problem, but do expect that parts of these
+%networks may be reused in different orders.
+
 \input{related}
 
-\section{Model}
+\input{model}
 
-Given a pre-trained \emph{network layout predictor} $P$, each training datum for
-this task can be thought of as a 4-tuple $(w, p, x, y)$, where
-\begin{itemize}
-  \setlength\itemsep{0em}
-  \item $w$ is a natural-language question
-  \item $p = P(w)$ a network layout
-  \item $x$ is an image
-  \item $y$ is an answer
-\end{itemize}
-A model is fully specified by a collection of modules $\{ m \}$, each with
-associated parameters $\theta_m$. Given $(w, p, x)$ as above, the model
-instantiates a network according to $p$, passes $w$ and $x$ as inputs, and
-obtains a distribution over labels (for the VQA task, we require the root module
-to be a classifier). Thus a model corresponds to a predictive distribution $p(y\
-|\ w, p, x; \theta)$.
-
-In the remainder of this section, we first describe the set of modules used for
-the VQA task, then explain the process by which questions are converted to
-network layouts.
-
-\subsection{Modules}
-
-Our goal in this section is to identify a small set of modules that can be
-assembled into all the configurations necessary for our tasks. This corresponds
-to identifying a minimal set of composable vision primitives. The modules
-operate on three basic data types: images, unnormalized attentions, and labels.
-For the particular task and modules described in this paper, almost all
-interesting compositional phenomena occur in the space of attentions, and it is
-not unreasonable to characterize our contribution more narrowly as an
-``attention-composition'' network. Nevertheless, other types may be
-required in the future (for different new or for greater coverage in the VQA
-domain).
-
-First, some notation: module names are typeset in a {\tt fixed width font}, and
-are of the form \mod{TYPE[INSTANCE](ARG$_1$, \ldots)}. \mod{TYPE} is a
-high-level module type (attention, classification, etc.) of the kind described
-in this section. \mod{INSTANCE} is the particular instance of the model under
-consideration---for example, \mod{attend[red]} locates red things, while
-\mod{attend[dog]} locates dogs. Weights may be shared at both the type and
-instance level. Modules with no arguments implicitly take the image as input;
-higher-level arguments may also inspect the image.
-
-\paragraph{Attend}
-
-An attention module \mod{attend[$x$]} convolves every position in the input
-image with a weight vector (distinct for each $x$) to produce a heatmap or
-unnormalized attention. So, for example, the output of the module {\small\tt
-attend[dog]} is a matrix whose entries should be in regions of the image
-containing cats, and small everywhere else, as shown below.\\
-\includegraphics[width=\columnwidth]{fig/attend}
-
-\paragraph{Re-attend}
-
-A re-attention module \mod{re-attend[$x$]} performs a fully-connected mapping
-from one attention to another. Again, the weights for this mapping are distinct
-for each $x$. So \mod{re-attend[above]} should take an attention and shift the
-regions of greatest activation upward (as below), while \mod{re-attend[not]}
-should move attention away from the active regions.\\%[1em]
-\includegraphics[width=\columnwidth]{fig/re-attend}
-
-\paragraph{Combine}
-
-A combination module \mod{combine[$x$]} merges two attentions into a single
-attention. For example, {\small\tt combine[and]} should be active only in the
-regions that are active in both inputs, while {\small\tt{combine[except]}}
-should be active where the first input is active and the second is
-inactive.\\[1em] 
-\includegraphics[width=\columnwidth]{fig/combine}
-
-\paragraph{Classify}
-
-A classification module \mod{classify[$x$]} takes an attention and the input
-image and maps them to a distribution over labels. For example, {\small\tt
-classify[color]} should return a distribution over colors for the region
-attended to.\\[1em]
-\includegraphics[width=\columnwidth]{fig/classify}
-
-\subsection{From strings to networks}
-
-In this section, we first describe how to map from natural language questions to
-\emph{layouts}, which specify both the set of modules used to answer a given
-question, and the connections between them. Next we describe how layouts are
-used to assemble the final prediction networks.
-
-To predict layouts use standard tools pre-trained on existing linguistic
-resources to obtained structured representations of questions. Future work might
-focus on learning (or at least fine-tuning) this prediction process jointly with
-the rest of the system, though in fact off-the-shelf tools produce high-quality
-analyses for almost all the questions in our data.
-
-\paragraph{Parsing}
-Specifically, we begin by parsing each question with the Stanford Parser (XXX)
-to obtain a universal dependency representation (XXX). Dependency parses express
-grammatical relations between parts of a sentence (e.g.\ between objects and
-their attributes, or events and their participants), and provide a lightweight
-abstraction away from the surface form of the sentence.
-
-Next, we filter the set of dependencies to those involving the wh-word in the
-question (XXX and more). This gives a simple logical form expressing (the
-primary) part of the sentences meaning. For example, \emph{what is standing in
-the field} becomes \mod{what(stand)}; \emph{what color is the truck} becomes
-\mod{color(truck)}, and \emph{is there a circle next to a square} becomes
-\mod{is(cicle, next-to(square))}. It is easiest to think of these
-representations as pieces of a variable-free cominatory logic \cite{Liang13DCS};
-every leaf is implicitly a function taking the image as input. The code for
-transforming parse trees to structured queries is provided in the accompanying
-software package.
-
-\paragraph{Layout}
-These logical forms already determine the structure of the predicted network,
-but not the identities of the modules that compose it. This final assignment of
-modules is fully determined by the structure of the parse. All leaves become
-\mod{attend} modules, all internal nodes become \mod{re-attend} or \mod{combine}
-modules dependint on their arity, and root nodes become \mod{classify} modules.
-
-Given the mapping from queries to network layouts described above, we have for
-each training example a network structure, an input image, and an output label.
-In many cases, these network structures are different, but have tied parameters.
-Networks which have the same high-level structure but different instantiations
-of individual modules (for example \emph{what color is the cat}---{\small\tt
-classify[color](attend[cat])} and \emph{where is the truck}---{\small\tt
-classify[where](attend[truck])}) can be processed in the same batch, resulting
-in efficient computation.
-
-\paragraph{Generalizations}
-
-It is easy to imagine applications where the input to the layout stage comes
-from something other than a natural language parser. Users of an image database,
-for example, might write SQL-like queries directly in order to specify their
-requirements precisely ({\tt EXISTS(cat) AND NOT(EXISTS(dog))}), or even mix
-visual and non-visual specifications in their queries ({\tt EXISTS(cat) and DATE
-> 2014-11-5}).
-
-Indeed, it is possible to construct this kind of ``visual SQL'' using exactly
-the models learned in this paper---once our system is trained, the learned
-modules for attention, classification, etc. can be assembled by any kind of
-outside user, without relying on natural language specifically.
-
-\begin{figure*}
-  \begin{subfigure}[t]{0.4\textwidth}
-    \includegraphics[width=\textwidth]{fig/full1}
-    \caption{NMN for answering the question \emph{What color is
-    his tie?}. The \mod{attend[tie]} module first predicts a heatmap
-    corresponding to the location of the tie. Next, the \mod{classify[color]}
-    module uses this heatmap to produce a weighted average of image features,
-  which are finally used to predict an output label.}
-  \end{subfigure}
-  \hfill
-  \begin{subfigure}[t]{0.55\textwidth}
-    \includegraphics[width=\textwidth]{fig/full2}
-    \caption{NMN for answering the question \emph{Is there a red shape above a
-    circle?}. The two \mod{attend} modules locate the red shapes and circles,
-    the \mod{re-attend[above]} shifts the attention above the circles, the
-    \emph{combine} module computes their intersection, and the
-    \mod{exists} module inspects the final attention and determines that it is
-    non-empty.}
-  \end{subfigure}
-  \caption{Sample NMNs for question answering about natural images and shapes.}
-\end{figure*}
-
-\section{Learning}
+\section{Training neural module networks}
 
 Our training objective is simply to find module parameters maximizing the
 likelihood of the data. By design, the last module in every network is a
@@ -375,7 +228,7 @@ supposed to be a cat recognizer (rather than a couch recognizer or a dog
 recognizer),
 and \mod{combine[and]} doesn't know it's supposed to compute intersections of
 attentions (rather than unions or differences). Instead, they acquire these
-semantics as a byproduct of the end-to-end training procedure. As can be seen in
+behaviors as a byproduct of the end-to-end training procedure. As can be seen in
 Figure XXX, the image--answer pairs and parameter tying together encourage each
 module to specialize in the appropriate way.
 
@@ -383,12 +236,11 @@ module to specialize in the appropriate way.
 %convolutional network is suitable for most detection and classification tasks,
 %but counting to arbitrary numbers probably requires a recurrent network.
 
+\begin{figure*}
+  \caption{Example output from our approach on thre visual QA tasks.}
+\end{figure*}
 
 \section{Experiments: natural images}
-
-For both experiments in this section, the input to each \mod{attend} module is
-the the Conv XXX layer of an Oxford VGGNet (XXX) after max-pooling. We do not
-fine-tune the VGGNet.
 
 \paragraph{VQA}
 We begin with a set of experiments on the recently-released VQA dataset. This
@@ -396,6 +248,8 @@ dataset consists of more than 200,000 images, each paired with three questions
 and ten answers per question. Data was generated by XXX, more corpus flavor
 text. We train our model using the standard train/test split, training only with
 those answers marked as high confidence.
+The input to each \mod{attend} module is the the Conv XXX layer of an Oxford
+VGGNet (XXX) after max-pooling. We do not fine-tune the VGGNet.
 
 Results are shown in Table XXX. As can be seen, we achieve state-of-the-art
 results on this task. A breakdown of our questions by answer type reveals that
@@ -414,10 +268,10 @@ so it is less prone to overfitting.
     \toprule
     & \multicolumn{4}{c}{test-dev} & test \\
     \cmidrule(lr){2-5} \cmidrule(lr){6-6}
-    & All & Yes/No & Number & Other & All \\
+    & Yes/No & Number & Other & All & All \\
     \midrule
-    LSTM & 48.8 & 78.20 & 35.7 & 26.6 \\
-    VIS+LSTM & 53.7 & 78.9 & 35.2 & 36.4 & \\
+    LSTM & 78.20 & 35.7 & 26.6 & 48.8 \\
+    VIS+LSTM & 78.9 & 35.2 & 36.4 & 53.7 & 54.1 \\
     NMN & \\
     \bottomrule
   \end{tabular}
@@ -431,21 +285,20 @@ automatically generated from captions rather than directly elicited from users.
 The \cocoqa dataset features four categories of question: objects, locations,
 colors and numbers. Our results are shown in Table XXX. As can be seen, the NMN
 model substantially outperforms the baselines in the color category, but is
-slightly worse in the others (this again appears to be due to overfitting). As
-above, if we replace our predictions in the count category only with a simple
-text baseline, we again achieve new state-of-the-art results on this task.
+slightly worse in the others (this again appears to be due to overfitting).
+As above, the inputs come from a VGGNet without fine-tuning.
 
 \begin{table}
   \footnotesize
   \center
-  \begin{tabular}{cccccc}
+  \begin{tabular}{lccccc}
     \toprule
-    System & All & Object & Location & Color & Number \\
+    System & Object & Location & Color & Number & All \\
     \midrule
-    IMG+BOW & 55.9 & 58.7 & 49.4 & 52.0 & 44.1 \\
-    2-VIS+BLSTM & 55.1 & 58.2 & 47.3 & 49.5 & 44.8 \\
-    NMN (indep) \\
-    NMN & 55.5 & 57.9 & 48.8 & 54.3 & 40.5 \\
+    IMG+BOW & 58.7 & 49.4 & 52.0 & 44.1 & 55.9 \\
+    2-VIS+BLSTM & 58.2 & 47.3 & 49.5 & 44.8 & 55.1 \\
+    NMN (indep) & 57.5 & & & 43.5 & \\
+    NMN & 57.9 & 48.8 & 54.3 & 40.5 & 55.5 \\
     \bottomrule
   \end{tabular}
   \caption{\cocoqa results}
@@ -454,7 +307,7 @@ text baseline, we again achieve new state-of-the-art results on this task.
 \section{Experiments: compositionality}
 
 Past work [Ren paper] has achieved state-of-the-art results on the \cocoqa
-dataset using a bag-of-words model . This is consistent with [VQA paper]'s
+dataset using a bag-of-words model. This is consistent with [VQA paper]'s
 observation that image features are most important for simple object- and
 activity-recognition questions, and that they make little difference for other
 categories (like yes/no questions). Taken together, these results suggest that
@@ -487,7 +340,7 @@ XXX babyai
   \caption{Example question, images, and answers from the \shapes dataset.
     Answering this question requires being able to recognize an object
     (\emph{circle}), an attribute (\emph{red}), and a spatial relation
-    (\emph{above}), and compare sets of objects having all these properties.}
+    (\emph{above}), and compare sets of objects previously retrieved.}
 \end{figure}
 
 
@@ -506,7 +359,7 @@ XXX babyai
   \centering
   \begin{tabular}{ccccc}
     \toprule
-    System & All & Size 2 & Size 3 & Size 4 \\
+    System & All & Size 4 & Size 5 & Size 6 \\
     \midrule
     IMG+BOW & \\
     VIS+LSTM &  \\
@@ -541,7 +394,7 @@ problems might be solved jointly, with uncertainty maintained over network
 structures throughout training and decoding. This might be accomplished either
 XXX.
 
-The fact that deep neural modules can be trained to produce predictable
+The fact that our neural module networks can be trained to produce predictable
 outputs---even when freely composed---points toward a more general paradigm of
 ``programs'' built from neural networks. In this paradigm, network designers
 (human or automated) have access to a standard kit of neural parts from which to

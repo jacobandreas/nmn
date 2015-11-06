@@ -2,11 +2,12 @@
 
 \begin{figure}[t] \begin{center}
     \includegraphics[width=\linewidth]{fig/teaser} \end{center} \caption{
-      A schematic representation of our full model---the shaded gray area is a
-      neural module network. Our approach uses a natural language parser to
-      dynamically lay out a deep network composed of reusable modules. For
-      visual question answering tasks, an additional sequence model provides
-      sentence context and learns common-sense knowledge.
+      A schematic representation of our proposed model---the shaded gray area is a
+      {\it neural module network} of the kind introduced in this paper. Our
+      approach uses a natural language parser to dynamically lay out a deep
+      network composed of reusable modules. For visual question answering tasks,
+      an additional sequence model provides sentence context and learns
+      common-sense knowledge.
     } \label{fig:teaser}
 \end{figure}
 
@@ -48,10 +49,10 @@ decisions; each module is determined by its input and output types.
 Different kinds of modules are marked with different
 colors in \Figref{fig:teaser}: for example the \mod{attend[$dog$]} module
 (green) produces a spatial heatmap while the \mod{classify[$where$]} (blue)
-produces a classification output, given an attention heatmap and the image
-content. Importantly, all modules of a NMN are independent, which allows the
-computation to be different for each problem instance, and possibly unobserved
-during training. 
+recognizes what is in the image region localized by the attention heatmap.
+Importantly, all modules of a NMN are independent, which allows the computation
+to be different for each problem instance, and possibly unobserved during
+training. 
 %So that we can answer novel question at test time, such as
 %\emph{Where is the banana?}, even we only saw \emph{count} or
 %\emph{color} question about \emph{bananas} during training.  
@@ -118,4 +119,4 @@ these to successfully complete established visual question answering tasks.
 Finally, we introduce a new dataset of challenging, highly compositional
 questions about abstract shapes, and show that our approach outperforms previous
 models by as much as XXX. We will release this dataset, as well as code for all
-systems described in this paper, at $<anonymous>$.
+systems described in this paper upon publication.
