@@ -1,35 +1,75 @@
 \section{Related work}
-We discuss related work which are similar with respect to the task we like to solve, namely visual question answering, and then with respect to the network architecture, i.e.\ similarities to our proposed Neural Module Networks.
+We consider three lines of related work: previous efforts toward visual question
+answering, discrete models for compositional semantics, and models that are
+structurally similar to neural module networks.
+%We discuss related work which are similar with respect to the task we like to
+%solve, namely visual question answering, and then with respect to the network
+%architecture, i.e.\ similarities to our proposed Neural Module Networks.
 
-\subsection{Visual Question Answering}
-Answering questions about images also has been referred to as Visual Turing Test \cite{malinowski14nips,geman15nas}. It is a task which only recently started to become popular with the emergence of visual question answering datasets, which have image, question and answer triplets. %The present work is made possible by a number of recently-created corpora for question answering about images, including the 
-While the DAQUAR dataset \cite{malinowski14nips} is restricted to indoor scenes, the CocoQA dataset \cite{yu15arxiv} and the VQA dataset \cite{antol15iccv} are significantly larger and have more visual variety. Both are based on images from the COCO dataset \cite{lin14eccv}. While CocoQA contains question-answer pairs automatically generated from the descriptions associated with the COCO dataset, \cite{antol15iccv} has crowed sourced questions-answer pairs. We evaluated our approach on the latter two.
+\paragraph{Visual Question Answering}
+Answering questions about images is sometimes referred to as a ``Visual
+Turing Test'' \cite{malinowski14nips,geman15nas}. It has only recently gained
+popularity, following the emergence of appropriate datasets consisting of paired
+images, questions, and answers. While the DAQUAR dataset \cite{malinowski14nips}
+is restricted to indoor scenes and contains relatively few examples, the \cocoqa
+dataset \cite{yu15arxiv} and the VQA dataset \cite{antol15iccv} are
+significantly larger and have more visual variety. Both are based on images from
+the COCO dataset \cite{lin14eccv}. While \cocoqa contains question-answer pairs
+automatically generated from the descriptions associated with the COCO dataset,
+\cite{antol15iccv} has crowed sourced questions-answer pairs. We evaluated our
+approach on the latter two.
 
+Notable ``classical'' approaches to this task include
+\cite{malinowski14nips,Krish2013Grounded}. Both of these approaches are similar
+to ours in their use of a semantic parser, but both relies on fixed logical
+inference rather than learned compositional operations.
 
+Several neural models for visual questioning have already been proposed in the
+literature \cite{ren2015image,ma15arxiv,gao2015you}, all of which use standard
+deep sequence modeling machinery to construct a joint embedding of image and
+text, which is immediately mapped to a distribution over answers. Here we
+attempt to more explicitly model the computational process needed to produce
+each answer, but benefit from techniques for producing sequence and image
+embeddings that have been important in previous work.
 
-``classical'': \cite{malinowski14nips}. Similar: Parser to model, but computation not composed, monolithic, not end-to-end trainable.
-
-``neural'': not decompositional.
-Several models for visual questioning have already been proposed in the literature \cite{ren2015image,ma15arxiv,gao2015you}, all of which use standard deep sequence modeling machinery to construct a joint embedding of image and text, which is immediately mapped to a distribution over answers. Here we attempt to more XXXly model the computational process needed to produce each answer, but also benefit from sequence and image embeddings XXX.
-
-A part of solving visual question answering, is to ground the question in the image. This grounding task has previously been approached in \cite{karpathy14nips,plummer15iccv,karpathy15cvpr}, where the authors tried to localize phrases in an image. \cite{xu2015arxiv} use an attention mechanism, to predict a heatmap for each word, as an auxiliary task, during sentence generation. Our attention modules are inspired by this idea.
+One important component of visual questioning is grounding the question in the
+image. This grounding task has previously been approached in
+\cite{karpathy14nips,plummer15iccv,karpathy15cvpr,kong14cvpr}, where the authors
+tried to localize phrases in an image. \cite{xu2015arxiv} use an attention
+mechanism, to predict a heatmap for each word, as an auxiliary task, during
+sentence generation. The attentional component of our model is inspired by these approaches.
 %(Image Retrieval using Scene Graphs \cite{johnson15cvpr})
 %\cite{geman15nas} a binary (yes/no) version of Visual Turing Test on synthetic data.
 
-Answering natural question has previously also been studied in text-only or non-visual/synthetic data.
-\todo{describe\cite{berant14acl,Liang13DCS,iyyer14emnlp,weston14arxiv}} 
+\paragraph{General compositional semantics}
 
-We are also unaware of past use of a semantic parser to predict network structures, or more generally to exploit the natural similarity between set-theoretic approaches to classical semantic parsing and attentional approaches to computer vision. As noted above, there is a large literature on learning to answer questions about structured knowledge representations from question--answer pairs, both with and without learning of meanings for simple predicates \cite{Liang13DCS,Krish2013Grounded}.
+There is a large literature on learning to answer questions about structured
+knowledge representations from question--answer pairs, both with and without
+learning of meanings for simple predicates \cite{Liang13DCS,Krish2013Grounded}.
+Outside of question answering, several models have been proposed for instruction
+following that impose a discrete ``command structure'' over an underlying
+continuous control signal \cite{Andreas14Paths,matuszek12icml}.  We are unaware
+of past use of a semantic parser to predict network structures, or more
+generally to exploit the natural similarity between set-theoretic approaches to
+classical semantic parsing and attentional approaches to computer vision.
 
+\paragraph{Neural network architectures}
 
-\subsection{Neural network architectures}
+The idea of selecting a different network graph for each input datum is
+fundamental to both recurrent networks (where the network grows in the length of
+the input) \cite{Elman90RNN} and recursive neural networks (where the network is
+built, e.g., according to the syntactic structure of the input)
+\cite{Socher13CVG}. But both of these approaches ultimately involve repeated
+application of a single computational module (\eg an LSTM
+\cite{Hochreiter97LSTM} or GRU \cite{Cho14GRU} cell).  From another direction,
+some kinds of memory networks \cite{Weston14MemNet} may be viewed as a special
+case of our model with a fixed computational graph, consisting of a sequence of
+\mod{attend} modules followed by a \mod{classify} module (see
+\autoref{sec:model} below).
 
-The idea of selecting a different network graph for each input datum is fundamental to both recurrent networks (where the network grows in the length of the input) \cite{Elman90RNN} and recursive neural networks (where the network is built, e.g., according to the syntactic structure of the input) \cite{Socher13CVG}. But both of these approaches ultimately involve repeated application of a single computational module (\eg an LSTM \cite{} or GRU \cite{} cell). Our basic contribution is in allowing the nodes of this graph to perform heterogeneous computations, and for "messages" of different kinds---raw image features, attentions, classification predictions---to be passed from one module to the next. We are unaware of any previous work allowing such mixed collections of modules to be trained jointly. 
-
-Memory networks \cite{weston14arxiv}?
-
-\paragraph{TODO}
-XXX my conll and emnlp for "continuous on bottom, discrete on top" with Jayant
-
-\cite{Krish2013Grounded,matuszek12icml,kong14cvpr}
-
+Our basic contribution is in both assembling this graph on the fly, and
+simultaneously in allowing the nodes to perform heterogeneous computations, with
+for "messages" of different kinds---raw image features, attentions,
+classification predictions---passed from one module to the next. We are unaware
+of any previous work allowing such mixed collections of modules to be trained
+jointly. 

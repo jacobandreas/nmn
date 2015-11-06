@@ -1,5 +1,6 @@
 
 \section{Neural module networks for visual QA}
+\label{sec:model}
 
 %Given a pre-trained \emph{network layout predictor} $P$, 
 Each training datum for this task can be thought of as a 3-tuple $(w, x, y)$, where
@@ -43,6 +44,7 @@ consideration---for example, \mod{attend[red]} locates red things, while
 instance level. Modules with no arguments implicitly take the image as input;
 higher-level arguments may also inspect the image.
 
+\pagebreak
 \subsubsection*{Attention}
 \[
   \mod{attend} : \mathit{Image} \to \mathit{Attention}
@@ -59,11 +61,14 @@ containing cats, and small everywhere else, as shown above.\\
   \mod{re-attend} : \mathit{Attention} \to \mathit{Attention}
 \]
 \includegraphics[width=\columnwidth]{fig/re-attend}
-A re-attention module \mod{re-attend[$c$]} performs a fully-connected mapping
-from one attention to another. Again, the weights for this mapping are distinct
-for each $c$. So \mod{re-attend[above]} should take an attention and shift the
-regions of greatest activation upward (as above), while \mod{re-attend[not]}
-should move attention away from the active regions.\\%[1em]
+A re-attention module \mod{re-attend[$c$]} is essentially just a multilayer
+perceptron, performing a fully-connected mapping from one attention to another.
+Again, the weights for this mapping are distinct for each $c$. So
+\mod{re-attend[above]} should take an attention and shift the regions of
+greatest activation upward (as above), while \mod{re-attend[not]} should move
+attention away from the active regions. For the experiments in this paper, the
+first FC layer produces a vector of size 32, and the second is the same size as
+the input. \\%[1em]
 
 \subsubsection*{Combination}
 \[
@@ -75,7 +80,7 @@ A combination module \mod{combine[$c$]} merges two attentions into a single
 attention. For example, {\small\tt combine[and]} should be active only in the
 regions that are active in both inputs, while {\small\tt{combine[except]}}
 should be active where the first input is active and the second is
-inactive.\\[1em] 
+inactive.
 
 \subsubsection*{Classification}
 \[
@@ -86,7 +91,7 @@ inactive.\\[1em]
 A classification module \mod{classify[$c$]} takes an attention and the input
 image and maps them to a distribution over labels. For example, {\small\tt
 classify[color]} should return a distribution over colors for the region
-attended to.\\[1em]
+attended to.
 
 \subsubsection*{Measurement}
 \[
@@ -97,6 +102,33 @@ A measurement module \mod{measure[$c$]} takes an attention alone and maps it to
 a distribution over labels. Because attentions passed between modules are
 unnormalized, \mod{measure} is suitable for evaluating the existence of a
 detected object, or counting sets of objects.
+
+\begin{figure*}
+  \begin{subfigure}[t]{0.4\textwidth}
+    \includegraphics[width=\textwidth]{fig/full1}
+    \caption{NMN for answering the question \emph{What color is
+    his tie?} The \mod{attend[tie]} module first predicts a heatmap
+    corresponding to the location of the tie. Next, the \mod{classify[color]}
+    module uses this heatmap to produce a weighted average of image features,
+  which are finally used to predict an output label.}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[t]{0.55\textwidth}
+    \includegraphics[width=\textwidth]{fig/full2}
+    \caption{NMN for answering the question \emph{Is there a red shape above a
+    circle?} The two \mod{attend} modules locate the red shapes and circles,
+    the \mod{re-attend[above]} shifts the attention above the circles, the
+    \emph{combine} module computes their intersection, and the
+    \mod{measure[is]} module inspects the final attention and determines
+  that it is non-empty.}
+  \label{fig:shape-nmn}
+  \end{subfigure}
+  \caption{Sample NMNs for question answering about natural images and shapes.
+  For both examples, layouts attentions and answers are real predictions made by
+  our model.}
+  \label{fig:nmns}
+\end{figure*}
+
 
 \subsection{From strings to networks}
 
@@ -109,17 +141,18 @@ to assemble the final prediction networks.
 We use standard tools pre-trained on existing linguistic resources to obtained
 structured representations of questions. Future work might focus on learning (or
 at least fine-tuning) this prediction process jointly with the rest of the
-system, though in fact off-the-shelf tools produce high-quality analyses for
-almost all the questions in our data.
+system. %, though in fact off-the-shelf tools produce high-quality analyses for
+%almost all the questions in our data.
 
 \paragraph{Parsing}
-Specifically, we begin by parsing each question with the Stanford Parser (XXX)
-to obtain a universal dependency representation (XXX). Dependency parses express
-grammatical relations between parts of a sentence (e.g.\ between objects and
-their attributes, or events and their participants), and provide a lightweight
-abstraction away from the surface form of the sentence. The parser also performs
-basic lemmatization, for example turning \emph{kites} into \emph{kite} and
-\emph{were} into \emph{be}. 
+Specifically, we begin by parsing each question with the Stanford Parser
+\cite{Klein03Unlex}.
+to obtain a universal dependency representation \cite{DeMarneffe08Deps}.
+Dependency parses express grammatical relations between parts of a sentence
+(e.g.\ between objects and their attributes, or events and their participants),
+and provide a lightweight abstraction away from the surface form of the
+sentence. The parser also performs basic lemmatization, for example turning
+\emph{kites} into \emph{kite} and \emph{were} into \emph{be}. 
 
 Next, we filter the set of dependencies to those connected the wh-word in the
 question (the exact distance we traverse varies depending on the task). This
@@ -157,13 +190,13 @@ in efficient computation.
 As noted above, parts of this conversion process are task-specific---we found
 that relatively simple expressions were best for the natural image questions,
 while the shapes question (by design) required deeper structures. Some summary
-statistics are provided in Table XXX.
+statistics are provided in \autoref{tab:struct-summary}.
 
 \begin{table*}
   \centering
   \begin{tabular}{cccccc}
     \toprule
-    & \# types & \# instances & \# layouts & Max depth & Max size \\
+    & \# types & \# instances & \# layouts & max depth & max size \\
     \midrule
     VQA & 4 & 1995 & 66549 & 2 & 3 \\
     \cocoqa & 3 & 892 & 4613 & 2 & 2\\
@@ -176,11 +209,13 @@ statistics are provided in Table XXX.
     (e.g. \mod{attend[llama]}), and ``\# layouts'' is the number of distinct
     composed structures (e.g. \mod{classify[color](attend[llama])}).
     ``Max depth'' is the greatest depth across all layouts, while ``max
-    size'' is the greatest number of modules---the network in XXX has depth 4
-    and size 5.
-    (All numbers from training sets.)
+    size'' is the greatest number of modules---for example, the network in
+    \autoref{fig:shape-nmn}
+    has depth 4 and size 5. (All numbers from training sets.)
   }
+  \label{tab:struct-summary}
 \end{table*}
+
 
 \paragraph{Generalizations}
 
@@ -201,29 +236,26 @@ the approach described in this paper---once our system is trained, the learned
 modules for attention, classification, etc. can be assembled by any kind of
 outside user, without relying on natural language specifically.
 
-\begin{figure*}
-  \begin{subfigure}[t]{0.4\textwidth}
-    \includegraphics[width=\textwidth]{fig/full1}
-    \caption{NMN for answering the question \emph{What color is
-    his tie?} The \mod{attend[tie]} module first predicts a heatmap
-    corresponding to the location of the tie. Next, the \mod{classify[color]}
-    module uses this heatmap to produce a weighted average of image features,
-  which are finally used to predict an output label.}
-  \end{subfigure}
-  \hfill
-  \begin{subfigure}[t]{0.55\textwidth}
-    \includegraphics[width=\textwidth]{fig/full2}
-    \caption{NMN for answering the question \emph{Is there a red shape above a
-    circle?} The two \mod{attend} modules locate the red shapes and circles,
-    the \mod{re-attend[above]} shifts the attention above the circles, the
-    \emph{combine} module computes their intersection, and the
-    \mod{measure[is]} module inspects the final attention and determines
-  that it is non-empty.}
-  \end{subfigure}
-  \caption{Sample NMNs for question answering about natural images and shapes.
-  For both examples, layouts attentions and answers are real predictions made by
-  our model.}
-\end{figure*}
+\subsection{Integrating common-sense knowledge}
+
+So far our discussion has focused on the neural module net architecture, without
+reference to the remainder of \autoref{fig:teaser}. Our final model combines the output
+from the neural module network with predictions from a simple LSTM question
+encoder. This is important for two reasons. First, because of the relatively
+aggressive simplification of the question that takes place in the parser,
+grammatical cues that don't substantively change the semantics of the question,
+but which might affect the answer, are discarded. For example, \emph{what is
+flying?} and \emph{what are flying?} both get converted to \mod{what(fly)}, but
+their answers should be \emph{kite} and \emph{kites} respectively, even given
+the same underlying image features. The question encoder thus allows us to model
+underlying syntactic regularities in the data. Second, it allows us to capture
+\emph{semantic} regularities: with missing or low-quality image data, it is
+reasonable to guess that \emph{what color is the bear?} is answered by
+\emph{brown}, and unreasonable to guess \emph{green}. The question encoder also
+allows us to model effects of this kind.
+
+All experiments in this paper use a standard single-layer LSTM with 1024 hidden
+units.
 
 \section{Training neural module networks}
 
@@ -236,8 +268,8 @@ Because of the dynamic network structures used to answer questions, some weights
 are updated much more frequently than others. For this reason we found that
 learning algorithms with adaptive per-weight learning rates performed
 substantially better than simple gradient descent. All the experiments described
-below use AdaDelta (XXX) (thus there was no hyperparameter search over step
-sizes).
+below use AdaDelta \cite{Zeiler12Adadelta}  (thus there was no hyperparameter
+search over step sizes).
 
 It is important to emphasize that the labels we have assigned to distinguish
 instances of the same module type---\mod{cat}, \mod{and}, etc.---are a
@@ -247,6 +279,7 @@ initialized %doesn't know it's
 as cat recognizer (rather than a couch recognizer or a dog recognizer), and
 \mod{combine[and]} isn't fixed to compute intersections of attentions (rather
 than unions or differences). Instead, they acquire these behaviors as a
-byproduct of the end-to-end training procedure. As can be seen in Figure XXX,
+byproduct of the end-to-end training procedure. As can be seen in
+\autoref{fig:nmns},
 the image--answer pairs and parameter tying together encourage each module to
 specialize in the appropriate way.

@@ -107,8 +107,9 @@ aaccuracy.
 
 While all the applications considered in this paper involve visual question
 answering, the general architecture is potentially of broader usefulness, and
-might be more generally applied to visual referring expression resolution (XXX)
-or question answering about natural language texts (XXX).
+might be more generally applied to visual referring expression resolution
+\cite{FitzGerald13Referring} or question answering about natural language texts
+\cite{Iyyer14Factoid}.
 
 %We evaluate our approach on two visual question answering tasks. First we
 %present a new synthetic image dataset paired with a complex set of queries
@@ -152,7 +153,7 @@ network'' for all purposes---state-of-the-art performance on the full range of
 computer vision tasks that are studied requires a variety of different deep
 network topologies. Second, though different networks are used for different
 purposes, it is commonplace to initialize systems for many of vision tasks with
-a prefix of a network trained for classification \cite{Long14FullyConvolutional} XXX. 
+a prefix of a network trained for classification \cite{Girshick14RCNN}. 
 This has been shown to substantially reduce training time and improve accuracy. 
 
 So while network structures are not \emph{universal} (in the sense that the same
@@ -169,7 +170,7 @@ noisily in language. In particular, where a simple question like \emph{is this a
 truck?} requires us to retrieve only one piece of information from an image,
 more complicated questions, like \emph{how many objects are to the left of
 the toaster?} might require multiple processing steps. The compositional nature
-of language (XXX) means that the number of such processing such steps is
+of language means that the number of such processing such steps is
 potentially unbounded. Moreover, multiple \emph{kinds} of processing might be
 required---repeated convolutions might identify a truck, but some kind of
 recurrent architecture is likely necessary to count up to arbitrary numbers.

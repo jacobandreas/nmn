@@ -12,7 +12,9 @@ So far we have maintained a strict separation between predicting network
 structures and learning network parameters. It is easy to imagine that these two
 problems might be solved jointly, with uncertainty maintained over network
 structures throughout training and decoding. This might be accomplished either
-XXX.
+with a monolithic network, by using some higher-level mechanism to ``attend'' to
+relevant portions of the computation, or else by integrating with existing tools
+for learning semantic parsers \cite{Krish2013Grounded}.
 
 The fact that our neural module networks can be trained to produce predictable
 outputs---even when freely composed---points toward a more general paradigm of
