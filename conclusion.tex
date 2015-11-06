@@ -1,0 +1,30 @@
+\section{Conclusions and future work}
+
+In this paper, we have introduced \emph{neural module networks}, which provide a
+general-purpose framework for learning collections of neural modules which can
+be dynamically assembled into arbitrary deep networks. We have demonstrated that
+this approach achieves state-of-the-art performance on existing datasets for
+visual question answering. Additionally, we have introduced a new dataset of
+highly compositional questions about simple arrangements of shapes, and shown
+that our approach substantially outperforms previous work.
+
+So far we have maintained a strict separation between predicting network
+structures and learning network parameters. It is easy to imagine that these two
+problems might be solved jointly, with uncertainty maintained over network
+structures throughout training and decoding. This might be accomplished either
+XXX.
+
+The fact that our neural module networks can be trained to produce predictable
+outputs---even when freely composed---points toward a more general paradigm of
+``programs'' built from neural networks. In this paradigm, network designers
+(human or automated) have access to a standard kit of neural parts from which to
+construct models for performing complex reasoning tasks. While visual question
+answering provides a natural testbed for this approach, its usefulness is
+potentially much broader, extending to queries about documents and structured
+knowledge bases or more general signal processing and function approximation.
+
+\small
+\bibliographystyle{ieee}
+\bibliography{biblioShort,rohrbach,related,jacob}
+
+

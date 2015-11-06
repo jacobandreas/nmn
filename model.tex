@@ -218,3 +218,29 @@ outside user, without relying on natural language specifically.
   For both examples, layouts attentions and answers are real predictions made by
   our model.}
 \end{figure*}
+
+\section{Training neural module networks}
+
+Our training objective is simply to find module parameters maximizing the
+likelihood of the data. By design, the last module in every network is a
+{\small\tt classify}, and so each assembled network represents a probability
+distribution.
+
+Because of the dynamic network structures used to answer questions, some weights
+are updated much more frequently than others. For this reason we found that
+learning algorithms with adaptive per-weight learning rates performed
+substantially better than simple gradient descent. All the experiments described
+below use AdaDelta (XXX) (thus there was no hyperparameter search over step
+sizes).
+
+It is important to emphasize that the labels we have assigned to distinguish
+instances of the same module type---\mod{cat}, \mod{and}, etc.---are a
+notational convenience, and do not reflect any manual specification of the
+behavior of the corresponding modules. \mod{detect[cat]} doesn't know it's
+supposed to be a cat recognizer (rather than a couch recognizer or a dog
+recognizer),
+and \mod{combine[and]} doesn't know it's supposed to compute intersections of
+attentions (rather than unions or differences). Instead, they acquire these
+behaviors as a byproduct of the end-to-end training procedure. As can be seen in
+Figure XXX, the image--answer pairs and parameter tying together encourage each
+module to specialize in the appropriate way.

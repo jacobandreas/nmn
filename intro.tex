@@ -120,3 +120,90 @@ Finally, we introduce a new dataset of challenging, highly compositional
 questions about abstract shapes, and show that our approach outperforms previous
 models by as much as XXX. We will release this dataset, as well as code for all
 systems described in this paper upon publication.
+
+\section{Motivations}
+
+%Many tasks in computer vision, including recognition, detection, and captioning,
+%share common substructure. For example, we might schematically express the
+%sequence of computations performed by a recognizer as
+%\begin{flushleft}
+%  \mod{classify(pickMostRelevant(detectObjects))}
+%\end{flushleft}
+%or a detector as
+%\begin{flushleft}
+%  \mod{drawBoundaries(detectObjects)}
+%\end{flushleft}
+%
+%In practice the picture is not this clean---classification or detection is
+%performed end-to-end by a single neural network, and the boundaries between
+%these ``phases'' are not clearly defined. Nevertheless we might expect \textit{a
+%priori} that a network used for classification might expose intermediate
+%representations useful for building a detector. 
+We begin with two simple observations. First, that there is no single ``best
+network'' for all purposes---state-of-the-art performance on the full range of
+computer vision tasks that are studied requires a variety of different deep
+network topologies. Second, though different networks are used for different
+purposes, it is commonplace to initialize systems for many of vision tasks with
+a prefix of a network trained for classification \cite{Long14FullyConvolutional} XXX. 
+This has been shown to substantially reduce training time and improve accuracy. 
+
+So while network structures are not \emph{universal} (in the sense that the same
+network is appropriate for all problems), they are at least empirically
+\emph{modular} (in the sense that intermediate representations for one task are
+useful for many others). 
+
+Can we generalize this idea in a way that is useful for question answering?
+Rather than thinking of question answering as a problem of learning a single
+function to map from questions and contexts to answers, it's perhaps useful to
+think of it as a highly-multitask learning setting, where each problem instance
+is associated with a novel task, and the identity of that task is expressed only
+noisily in language. In particular, where a simple question like \emph{is this a
+truck?} requires us to retrieve only one piece of information from an image,
+more complicated questions, like \emph{how many objects are to the left of
+the toaster?} might require multiple processing steps. The compositional nature
+of language (XXX) means that the number of processing such steps is potentially
+unbounded. Moreover, multiple \emph{kinds} of processing might be
+required---repeated convolutions might identify a truck, but some kind of
+recurrent architecture is likely necessary to count up to arbitrary numbers.
+
+Thus our goal in this paper is to specify a framework for modular, composable,
+jointly-trained neural networks. In this framework, we first predict the
+structure of the computation needed to answer each question individually, then
+realize this structure by constructing an appropriately-shaped neural network
+from an inventory of reusable modules. These modules are learned jointly, rather
+than trained in isolation, and specialization to individual tasks (identifying
+properties, spatial relations, etc.) arises naturally from the training
+objective.
+
+%If we consider a few examples of questions:
+%XXX
+%\begin{center}
+%  \begin{tabular}{ll}
+%    {\it how many black cats?} & \mod{count(and(detect[cat], detect[black]))} \\
+%    {\it what color is the cat?} & \mod{classify[color](detect[cat])} \\
+%    {\it what color is the dog?} & \mod{classify[color](detect[dog])} \\
+%    {\it is there a dog?} & \mod{exists(detect[dog])}
+%  \end{tabular}
+%\end{center}
+%we again see that there is common computational substructure involved in solving
+%the associated tasks.  With sub-networks for computing \mod{detect[cat]},
+%\mod{classify}, \mod{count}, etc., we can in principle answer
+%questions with novel structure like---e.g.\ {\it is there a black
+%dog?}---without any additional training data.
+%
+%Note in particular that we expect these modules to differ not only in their
+%parameters, but more fundamentally in their topologies. Intuitively,
+%\mod{detect[cat]} should take an image as input, perform some
+%fully-convolutional operation, and output an attention (understood as a
+%distribution over positions in the image), while {\small\tt classify[color]}
+%should take both the input image and such an attention, and map to a
+%distribution over labels. Some computations require convolutional operations,
+%some require fully-connected operations, and some (like counting) may require
+%recurrent network structures. We should not expect that we will be able to use
+%the same network layout for every problem, but do expect that parts of these
+%networks may be reused in different orders.
+
+\input{related}
+
+\input{model}
+
